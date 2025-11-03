@@ -54,4 +54,3 @@ offset_bottom = 39.0
 grow_horizontal = 2
 
 [connection signal="timeout" from="Timer" to="." method="_on_timer_timeout"]
-[connection signal="health_depleted" from="Player" to="." method="_on_player_health_depleted"]

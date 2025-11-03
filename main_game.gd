@@ -6,12 +6,14 @@ extends Node2D
 # ------------------------------------------------------------------
 const MOB_SCENE       = preload("res://mob.tscn")
 const VOID_MITE_SCENE = preload("res://VoidMite.tscn")
+const NEBULITH_COLOSSUS_SCENE = preload("res://NebulithColossus.tscn")
 const XP_VIAL_SCENE   = preload("res://experience_vial.tscn")
 const CHEST_SCENE     = preload("res://Chest.tscn")
 const ITEM_UI_SCENE   = preload("res://ItemUI.tscn")
 const GAME_HUD_SCENE  = preload("res://GameHUD.tscn")
 const PAUSE_MENU_SCENE = preload("res://PauseMenu.tscn")
 const ENEMY_HEALTH_BAR = preload("res://EnemyHealthBar.tscn")
+const GAME_OVER_SCENE = preload("res://GameOverScreen.tscn")  # PHASE 3
 
 # ------------------------------------------------------------------
 # 2. NODES
@@ -60,16 +62,20 @@ func _ready() -> void:
 	if player and player.has_signal("health_depleted"):
 		player.health_depleted.connect(_on_player_death)
 	
-	# Create HUD
-	if GAME_HUD_SCENE:
-		game_hud = GAME_HUD_SCENE.instantiate()
-		game_hud.player = player
-		game_hud.main_game = self
-		add_child(game_hud)
+	# Create HUD - use call_deferred to ensure player is ready
+	call_deferred("setup_hud")
 	
 	print("=== NEBULA REVENANT STARTED ===")
 	print("Spawn rate: %.2f seconds" % spawn_rate)
 	print("First boss at: 2:30")
+
+func setup_hud():
+	if GAME_HUD_SCENE and is_instance_valid(player):
+		game_hud = GAME_HUD_SCENE.instantiate()
+		game_hud.player = player
+		game_hud.main_game = self
+		add_child(game_hud)
+		print("✅ HUD created with player level: %d" % player.player_stats.level)
 
 func _input(event: InputEvent) -> void:
 	# Pause menu with ESC
@@ -138,6 +144,10 @@ func _process(delta: float) -> void:
 		# After 2 minutes, also spawn void mites!
 		if game_time >= 120.0:
 			spawn_void_mite()
+		
+		# After 6 minutes, occasionally spawn Nebulith Colossus (20% chance)
+		if game_time >= 360.0 and randf() < 0.20:
+			spawn_colossus()
 
 # ------------------------------------------------------------------
 # 7. SPAWN MOB – 4-SIDE OFF-SCREEN
@@ -157,6 +167,12 @@ func spawn_void_mite() -> void:
 	if not is_instance_valid(player):
 		return
 	spawn_enemy(VOID_MITE_SCENE)
+
+# Spawn Nebulith Colossus (tanky enemy after 6 minutes)
+func spawn_colossus() -> void:
+	if not is_instance_valid(player):
+		return
+	spawn_enemy(NEBULITH_COLOSSUS_SCENE)
 
 # Generic enemy spawner
 func spawn_enemy(enemy_scene: PackedScene) -> void:
@@ -436,9 +452,25 @@ func _on_level_up_upgrade_selected(upgrade_data: Dictionary) -> void:
 	get_tree().paused = false
 
 # ------------------------------------------------------------------
-# 12. DEATH + RESTART
+# 12. DEATH + GAME OVER
 # ------------------------------------------------------------------
 func _on_player_death() -> void:
 	get_tree().paused = true
 	print("💀 GAME OVER – %.0f seconds!" % game_time)
-	print("Bosses defeated: %d" % boss_spawn_times.size())
+	print("Bosses defeated: %d" % bosses_defeated)
+	print("Enemies killed: %d" % enemies_killed)
+	
+	# PHASE 3: Show game over screen with stats
+	if GAME_OVER_SCENE and is_instance_valid(player):
+		var game_over = GAME_OVER_SCENE.instantiate()
+		var stats = player.get_run_stats()
+		game_over.set_run_stats(stats)
+		ui_layer.add_child(game_over)
+		
+		# Connect exit button
+		if game_over.has_signal("exit_to_menu"):
+			game_over.exit_to_menu.connect(_on_exit_to_menu)
+
+func _on_exit_to_menu():
+	get_tree().paused = false
+	get_tree().reload_current_scene()  # Restart for now

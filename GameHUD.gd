@@ -68,4 +68,7 @@ func update_xp():
 
 # Update level display
 func update_level():
+	if not player:
+		level_label.text = "Level ?"
+		return
 	level_label.text = "Level %d" % player.player_stats.level

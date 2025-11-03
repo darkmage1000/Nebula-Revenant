@@ -18,6 +18,7 @@ var health: float = 20.0
 var max_health: float = 20.0
 var xp_value: int = 10
 var level_scaling_applied: bool = false
+var is_colossus: bool = false  # Special flag for tanky enemy
 
 var active_dots: Dictionary = {}
 
@@ -25,6 +26,17 @@ var active_dots: Dictionary = {}
 
 func _ready():
 	add_to_group("mob")  # Important for grenades to find enemies!
+	
+	# Check if this is a Nebulith Colossus by node name
+	if name.begins_with("NebulithColossus") or get_node_or_null("ColossusSprite"):
+		is_colossus = true
+		# Colossus has 3x health, slower speed, more XP
+		base_health = 60.0  # 3x tankier
+		base_speed = 100   # Slower
+		health = base_health
+		speed = base_speed
+		xp_value = 30  # 3x XP reward
+	
 	apply_level_scaling()
 	max_health = health
 
@@ -34,23 +46,23 @@ func apply_level_scaling():
 	
 	var player_level = player.player_stats.get("level", 1)
 	
-	# PHASE 3: Enemy scaling formula
-	# Health scales: +8% per level (exponential)
-	# Speed scales: +2% per level (linear)
-	# XP scales: +5% per level
+	# PHASE 3: MUCH SLOWER enemy scaling to match XP changes
+	# Health scales: +4% per level (was +8%)
+	# Speed scales: +1% per level (was +2%)
+	# XP scales: +3% per level (was +5%)
 	
 	var level_mult = player_level - 1  # No scaling at level 1
 	
-	# Health: Exponential growth to keep up with player damage
-	health = base_health * pow(1.08, level_mult)
+	# Health: Moderate exponential growth
+	health = base_health * pow(1.04, level_mult)
 	max_health = health
 	
-	# Speed: Linear growth (don't want them too fast)
-	speed = base_speed * (1.0 + (level_mult * 0.02))
+	# Speed: Very slow linear growth
+	speed = base_speed * (1.0 + (level_mult * 0.01))
 	speed += randf_range(-20, 20)  # Add some variation
 	
-	# XP: Scales with level
-	xp_value = int(10 * (1.0 + (level_mult * 0.05)))
+	# XP: Scales slower with level
+	xp_value = int(10 * (1.0 + (level_mult * 0.03)))
 	
 	level_scaling_applied = true
 	
@@ -102,10 +114,34 @@ func take_damage(amount: float, is_dot: bool = false, is_crit: bool = false):
 	if health <= 0:
 		died.emit()
 		
+		# PHASE 3: Track kill for player stats
+		if is_instance_valid(player) and player.has_method("register_kill"):
+			player.register_kill()
+		
+		# Drop XP vial
 		var vial = XP_VIAL_SCENE.instantiate()
 		vial.global_position = global_position
 		vial.value = xp_value
 		get_parent().add_child(vial)
+		
+		# PHASE 4: Drop currency (5% chance per enemy)
+		if randf() < 0.05:  # 5% drop rate
+			var shard_value = 1  # Base shard value
+			if randf() < 0.1:  # 10% chance for bonus shard
+				shard_value = randi_range(2, 5)
+			
+			# Try to spawn shard (gracefully handle if scene doesn't exist)
+			var shard_scene = null
+			if ResourceLoader.exists("res://NebulaShard.tscn"):
+				shard_scene = ResourceLoader.load("res://NebulaShard.tscn", "PackedScene", ResourceLoader.CACHE_MODE_REUSE)
+			
+			if shard_scene:
+				var shard = shard_scene.instantiate()
+				if shard:
+					if shard.has_method("set") and "value" in shard:
+						shard.value = shard_value
+					shard.global_position = global_position + Vector2(randf_range(-20, 20), randf_range(-20, 20))
+					get_parent().add_child(shard)
 		
 		queue_free()
 
