@@ -1,0 +1,31 @@
+[gd_scene load_steps=2 format=3 uid="uid://bir27wiw6va56"]
+
+[ext_resource type="Script" uid="uid://dkyvo2m8wi0hc" path="res://upgrade_option.gd" id="1_n3peg"]
+
+[node name="UpgradeOption" type="Button"]
+custom_minimum_size = Vector2(300, 50)
+script = ExtResource("1_n3peg")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TextureRect" type="TextureRect" parent="HBoxContainer"]
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
+[node name="title" type="Label" parent="HBoxContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 6
+
+[node name="description" type="Label" parent="HBoxContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 6

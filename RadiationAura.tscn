@@ -1,0 +1,14 @@
+[gd_scene load_steps=3 format=3 uid="uid://dejt2yviyecw"]
+
+[ext_resource type="Script" uid="uid://d03hutjdqhfeq" path="res://radiation_aura.gd" id="1_o6t1o"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_o6t1o"]
+
+[node name="RadiationAura" type="Area2D"]
+collision_layer = 15
+collision_mask = 15
+script = ExtResource("1_o6t1o")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(15, 0)
+shape = SubResource("CircleShape2D_o6t1o")

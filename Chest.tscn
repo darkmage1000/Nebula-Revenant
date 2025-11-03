@@ -1,0 +1,25 @@
+[gd_scene load_steps=4 format=3 uid="uid://tglsxkqnboka"]
+
+[ext_resource type="Script" uid="uid://bed7ancabef81" path="res://Chest.gd" id="1_chest"]
+[ext_resource type="Texture2D" uid="uid://b244srhtuto05" path="res://chest.png" id="2_5udua"]
+
+[sub_resource type="CircleShape2D" id="pickup_area"]
+radius = 40.0
+
+[node name="Chest" type="Area2D"]
+script = ExtResource("1_chest")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+modulate = Color(1, 0.9, 0.3, 1)
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("2_5udua")
+
+[node name="Glow" type="Sprite2D" parent="."]
+modulate = Color(1, 0.9, 0.3, 0.5)
+z_index = -1
+scale = Vector2(50, 50)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("pickup_area")
+
+[connection signal="body_entered" from="." to="." method="_on_body_entered"]

@@ -1,0 +1,17 @@
+[gd_scene load_steps=3 format=3 uid="uid://b1c75mhkgtdpy"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_vhmki"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_3hf5a"]
+
+[node name="MobHealthBar" type="Node2D"]
+
+[node name="HealthBar" type="TextureProgressBar" parent="."]
+custom_minimum_size = Vector2(40, 5)
+offset_right = 40.0
+offset_bottom = 40.0
+max_value = 1.0
+value = 1.0
+texture_under = SubResource("AtlasTexture_vhmki")
+texture_progress = SubResource("AtlasTexture_3hf5a")
+tint_progress = Color(0, 1, 0, 1)

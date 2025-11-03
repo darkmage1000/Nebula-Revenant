@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://c2pgk055qqktv"]
+
+[ext_resource type="Script" uid="uid://c8yjlb0rmu17t" path="res://FloatingDmg.gd" id="1_jmgru"]
+
+[node name="FloatingDmg" type="Label"]
+script = ExtResource("1_jmgru")

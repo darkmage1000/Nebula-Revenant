@@ -1,0 +1,57 @@
+[gd_scene load_steps=6 format=3 uid="uid://d0t67csvm4cwh"]
+
+[ext_resource type="Script" uid="uid://5y4tmf82orxf" path="res://main_game.gd" id="1_dugkq"]
+[ext_resource type="PackedScene" uid="uid://gleb5y74y1xb" path="res://player.tscn" id="2_6bm6p"]
+[ext_resource type="PackedScene" uid="uid://ch21k07gdwwog" path="res://bullet.tscn" id="4_2pltu"]
+[ext_resource type="PackedScene" uid="uid://ca58c0aqkwyfb" path="res://mob.tscn" id="5_2pltu"]
+
+[sub_resource type="Curve2D" id="Curve2D_6bm6p"]
+_data = {
+"points": PackedVector2Array(0, 0, 0, 0, -3, 716, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 1275, 0, 0, 0, 0, 0, 1275, 712, 0, 0, 0, 0, -5, 716)
+}
+point_count = 5
+
+[node name="MainGame" type="Node2D"]
+script = ExtResource("1_dugkq")
+
+[node name="Timer" type="Timer" parent="."]
+autostart = true
+
+[node name="GameOver" type="Label" parent="."]
+offset_left = 615.0
+offset_top = 66.0
+offset_right = 655.0
+offset_bottom = 89.0
+
+[node name="Player" parent="." instance=ExtResource("2_6bm6p")]
+position = Vector2(667, 342)
+scale = Vector2(0.642, 1)
+
+[node name="Bullet" parent="." instance=ExtResource("4_2pltu")]
+position = Vector2(-219, -185)
+
+[node name="Path2D" type="Path2D" parent="."]
+position = Vector2(5, 5)
+curve = SubResource("Curve2D_6bm6p")
+
+[node name="PathFollow2D" type="PathFollow2D" parent="Path2D"]
+position = Vector2(-3, 716)
+rotation = -1.56659
+
+[node name="Mob" parent="." instance=ExtResource("5_2pltu")]
+position = Vector2(-122, -259)
+
+[node name="UILayer" type="CanvasLayer" parent="."]
+
+[node name="TimeLabel" type="Label" parent="UILayer"]
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -20.0
+offset_top = 16.0
+offset_right = 20.0
+offset_bottom = 39.0
+grow_horizontal = 2
+
+[connection signal="timeout" from="Timer" to="." method="_on_timer_timeout"]
+[connection signal="health_depleted" from="Player" to="." method="_on_player_health_depleted"]

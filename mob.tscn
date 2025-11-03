@@ -1,0 +1,25 @@
+[gd_scene load_steps=5 format=3 uid="uid://ca58c0aqkwyfb"]
+
+[ext_resource type="Script" uid="uid://crqn8bow1qs3x" path="res://mob.gd" id="1_dy6sc"]
+[ext_resource type="Texture2D" uid="uid://dbbckbdnp7ag5" path="res://slime.png" id="2_nokgg"]
+[ext_resource type="PackedScene" uid="uid://b1c75mhkgtdpy" path="res://MobHealthBar.tscn" id="3_ubaqv"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_nokgg"]
+radius = 20.0
+
+[node name="Mob" type="CharacterBody2D" groups=["mob"]]
+collision_layer = 2
+collision_mask = 7
+script = ExtResource("1_dy6sc")
+
+[node name="MobHealthBar" parent="." instance=ExtResource("3_ubaqv")]
+position = Vector2(-1, -31)
+scale = Vector2(0.600001, 1)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_nokgg")
+one_way_collision_margin = 0.0
+
+[node name="Slime" type="Sprite2D" parent="."]
+scale = Vector2(0.15, 0.15)
+texture = ExtResource("2_nokgg")
