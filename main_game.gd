@@ -5,6 +5,7 @@ extends Node2D
 # 1. PRELOADS
 # ------------------------------------------------------------------
 const MOB_SCENE       = preload("res://mob.tscn")
+const VOID_MITE_SCENE = preload("res://VoidMite.tscn")
 const XP_VIAL_SCENE   = preload("res://experience_vial.tscn")
 const CHEST_SCENE     = preload("res://Chest.tscn")
 const ITEM_UI_SCENE   = preload("res://ItemUI.tscn")
@@ -43,7 +44,7 @@ var game_time: float = 0.0
 var spawn_rate: float = 1.2          # FASTER! Was 2.0, now 1.2 seconds
 var difficulty_mult: float = 1.0
 
-const TANKIER_INTERVAL = 120.0       # Every 2 minutes
+const TANKIER_INTERVAL = 90.0        # Every 90 seconds (was 120)
 const FIRST_BOSS_TIME  = 150.0       # 2:30 for testing (2.5 minutes)
 const BOSS_INTERVAL    = 360.0       # Every 6 minutes after first
 const APOCALYPSE_TIME  = 1800.0      # 30 minutes
@@ -103,10 +104,10 @@ func _process(delta: float) -> void:
 		
 	game_time += delta
 
-	# 2-MIN TANKIER + FASTER SPAWNS
+	# 90-SEC TANKIER + FASTER (was 2 min)
 	if fmod(game_time, TANKIER_INTERVAL) < delta:
-		difficulty_mult += 0.5
-		spawn_rate = max(0.3, spawn_rate * 0.85)  # Gets 15% faster each wave
+		difficulty_mult += 1.0  # Was 0.5, now doubles HP every 90 sec!
+		spawn_rate = max(0.2, spawn_rate * 0.75)  # Was 0.85, now 25% faster!
 		print("⚡ DIFFICULTY UP! HP×%.1f | Spawn: %.2fs" % [difficulty_mult, spawn_rate])
 
 	# FIRST BOSS @ 2:30 (for testing)
@@ -133,6 +134,10 @@ func _process(delta: float) -> void:
 	if spawn_timer >= spawn_rate:
 		spawn_timer = 0.0
 		spawn_mob()
+		
+		# After 2 minutes, also spawn void mites!
+		if game_time >= 120.0:
+			spawn_void_mite()
 
 # ------------------------------------------------------------------
 # 7. SPAWN MOB – 4-SIDE OFF-SCREEN
@@ -140,8 +145,22 @@ func _process(delta: float) -> void:
 func spawn_mob() -> void:
 	if not is_instance_valid(player):
 		return
-		
-	var mob = MOB_SCENE.instantiate()
+	
+	# Spawn 2-3 enemies per cycle (was 1)
+	var enemies_to_spawn = randi_range(2, 3)
+	
+	for i in range(enemies_to_spawn):
+		spawn_enemy(MOB_SCENE)
+
+# Spawn void mites (same stats, different sprite)
+func spawn_void_mite() -> void:
+	if not is_instance_valid(player):
+		return
+	spawn_enemy(VOID_MITE_SCENE)
+
+# Generic enemy spawner
+func spawn_enemy(enemy_scene: PackedScene) -> void:
+	var mob = enemy_scene.instantiate()
 
 	# Apply scaling
 	mob.health      *= difficulty_mult

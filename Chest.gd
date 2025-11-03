@@ -223,6 +223,12 @@ var is_opened: bool = false
 func _ready():
 	add_to_group("chest")
 	
+	# PHASE 3 FIX: Ensure chest can detect player
+	collision_layer = 1
+	collision_mask = 1
+	monitoring = true
+	monitorable = true
+	
 	# Set chest color based on tier
 	update_chest_visual()
 	
@@ -231,6 +237,10 @@ func _ready():
 	
 	# Select random item from this tier
 	select_random_item()
+	
+	# PHASE 3 FIX: Connect signal if not already connected
+	if not body_entered.is_connected(_on_body_entered):
+		body_entered.connect(_on_body_entered)
 
 func update_chest_visual():
 	var tier_colors = {

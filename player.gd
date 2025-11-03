@@ -16,6 +16,7 @@ var player_stats = {
 	"shield": 50.0,
 	"shield_recharge_rate": 5.0,
 	"lifesteal": 0.0,             # % of damage dealt healed back
+	"armor": 0,                   # Flat damage reduction
 	"speed": 600.0,
 	"attack_speed_mult": 1.0,
 	"damage_mult": 1.0,
@@ -23,6 +24,8 @@ var player_stats = {
 	"projectiles": 0,
 	"crit_chance": 0.05,
 	"crit_damage": 1.5,
+	"pickup_radius": 100.0,       # XP collection radius
+	"luck": 0,                    # Better drops & XP
 	"max_weapon_slots": 6,
 	"current_weapons": []  # Changed to start empty - pistol added in _ready
 }
@@ -101,6 +104,12 @@ var weapon_upgrade_paths = {
 func _ready():
 	player_stats.current_health = player_stats.max_health
 	
+	# Set initial pickup radius
+	if pickup_radius:
+		var collision_shape = pickup_radius.get_node("CollisionShape2D")
+		if collision_shape and collision_shape.shape:
+			collision_shape.shape.radius = player_stats.pickup_radius
+	
 	# Add starting pistol
 	add_weapon("pistol")
 
@@ -132,6 +141,8 @@ func _physics_process(delta):
 	var overlapping_mobs = hurt_box.get_overlapping_bodies()
 	if overlapping_mobs.size() > 0:
 		var dmg = DAMAGE_RATE * overlapping_mobs.size() * delta
+		# Apply armor reduction (minimum 1 damage)
+		dmg = max(1.0, dmg - player_stats.armor * delta)
 		player_stats.current_health -= dmg
 		if player_stats.current_health <= 0:
 			health_depleted.emit()
@@ -146,7 +157,10 @@ func _physics_process(delta):
 # 8. XP + LEVEL UP
 # ==============================================================
 func pickup_xp(amount: int) -> void:
-	player_stats.current_xp += amount
+	# Apply luck bonus (each point of luck = +10% XP)
+	var luck_mult = 1.0 + (player_stats.luck * 0.10)
+	var final_amount = int(amount * luck_mult)
+	player_stats.current_xp += final_amount
 	
 	while player_stats.current_xp >= player_stats.xp_to_next_level:
 		player_stats.current_xp -= player_stats.xp_to_next_level
@@ -241,8 +255,15 @@ func upgrade_player_stat(stat_key: String, value: float) -> void:
 		"max_health":
 			player_stats.max_health += value
 			player_stats.current_health += value  # Also gain the health
-		"health_regen", "lifesteal", "crit_chance", "projectiles", "max_weapon_slots":
+		"health_regen", "lifesteal", "crit_chance", "projectiles", "max_weapon_slots", "armor", "luck":
 			player_stats[stat_key] += value
+		"pickup_radius":
+			player_stats.pickup_radius += value
+			# Update the pickup radius collision shape
+			if pickup_radius:
+				var collision_shape = pickup_radius.get_node("CollisionShape2D")
+				if collision_shape and collision_shape.shape:
+					collision_shape.shape.radius = player_stats.pickup_radius
 		"speed", "attack_speed_mult", "damage_mult", "aoe_mult", "crit_damage":
 			player_stats[stat_key] *= (1.0 + value)
 	

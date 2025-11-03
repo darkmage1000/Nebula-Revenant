@@ -11,10 +11,13 @@ const CRIT_COLOR = Color(1.0, 0.5, 0.0)
 const WEAPON_COLOR = Color(1.0, 1.0, 0.0)
 
 # BALANCED BASE STATS - 2 shots to kill with starting pistol (12 damage)
-var speed = randf_range(200, 300)
-var health: float = 20.0        # Perfect for 2 pistol shots
+var base_speed = 150
+var base_health: float = 20.0
+var speed: float = 150
+var health: float = 20.0
 var max_health: float = 20.0
 var xp_value: int = 10
+var level_scaling_applied: bool = false
 
 var active_dots: Dictionary = {}
 
@@ -22,7 +25,37 @@ var active_dots: Dictionary = {}
 
 func _ready():
 	add_to_group("mob")  # Important for grenades to find enemies!
+	apply_level_scaling()
 	max_health = health
+
+func apply_level_scaling():
+	if level_scaling_applied or not is_instance_valid(player):
+		return
+	
+	var player_level = player.player_stats.get("level", 1)
+	
+	# PHASE 3: Enemy scaling formula
+	# Health scales: +8% per level (exponential)
+	# Speed scales: +2% per level (linear)
+	# XP scales: +5% per level
+	
+	var level_mult = player_level - 1  # No scaling at level 1
+	
+	# Health: Exponential growth to keep up with player damage
+	health = base_health * pow(1.08, level_mult)
+	max_health = health
+	
+	# Speed: Linear growth (don't want them too fast)
+	speed = base_speed * (1.0 + (level_mult * 0.02))
+	speed += randf_range(-20, 20)  # Add some variation
+	
+	# XP: Scales with level
+	xp_value = int(10 * (1.0 + (level_mult * 0.05)))
+	
+	level_scaling_applied = true
+	
+	if player_level > 10:
+		print("Mob spawned at player level %d: HP=%.1f Speed=%.1f XP=%d" % [player_level, health, speed, xp_value])
 
 func _physics_process(delta):
 	if not is_instance_valid(player):

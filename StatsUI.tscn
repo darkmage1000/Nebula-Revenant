@@ -1,0 +1,25 @@
+[gd_scene load_steps=2 format=3 uid="uid://bjcclgwyaj8hl"]
+
+[ext_resource type="Script" uid="uid://dwq56hb5ctw1v" path="res://stats_ui.gd" id="1_4hcr7"]
+
+[node name="StatsUi" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_4hcr7")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+
+[node name="PlayerLevelLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="WeaponsLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="StatsLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
