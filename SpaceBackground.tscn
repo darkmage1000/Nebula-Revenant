@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3 uid="uid://space_background"]
+
+[ext_resource type="Script" path="res://SpaceBackground.gd" id="1"]
+
+[node name="SpaceBackground" type="Node2D"]
+z_index = -100
+script = ExtResource("1")

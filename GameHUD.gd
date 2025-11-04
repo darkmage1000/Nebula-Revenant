@@ -17,6 +17,13 @@ func _ready():
 	pass
 
 func _process(delta: float):
+	# Hide HUD when game is paused
+	if get_tree().paused:
+		visible = false
+		return
+	else:
+		visible = true
+	
 	if not is_instance_valid(player) or not is_instance_valid(main_game):
 		return
 	

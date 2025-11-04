@@ -11,7 +11,6 @@ radius = 100.0
 
 [node name="Player" type="CharacterBody2D" groups=["player_group"]]
 position = Vector2(15, 0)
-collision_mask = 15
 motion_mode = 1
 script = ExtResource("1_onrkg")
 
@@ -27,6 +26,7 @@ shape = SubResource("CircleShape2D_onrkg")
 [node name="HurtBox" type="Area2D" parent="."]
 unique_name_in_owner = true
 position = Vector2(-2, 2)
+collision_layer = 0
 collision_mask = 2
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="HurtBox"]

@@ -35,7 +35,7 @@ var items_collected: Array[Dictionary] = []  # Track all items with tier
 # ------------------------------------------------------------------
 const MIN_DISTANCE_FROM_PLAYER = 500.0
 const MAX_SPAWN_DISTANCE      = 1200.0
-const OFFSCREEN_BUFFER        = 100.0
+const OFFSCREEN_BUFFER        = 200.0  # INCREASED from 100 to 200 - ensures spawns are FAR offscreen
 const MAX_SPAWN_ATTEMPTS      = 30
 
 # ------------------------------------------------------------------
@@ -43,7 +43,7 @@ const MAX_SPAWN_ATTEMPTS      = 30
 # ------------------------------------------------------------------
 var is_level_up_open: bool = false
 var game_time: float = 0.0
-var spawn_rate: float = 1.2          # FASTER! Was 2.0, now 1.2 seconds
+var spawn_rate: float = 1.8          # BALANCED! Not too fast, not too slow
 var difficulty_mult: float = 1.0
 
 const TANKIER_INTERVAL = 90.0        # Every 90 seconds (was 120)
@@ -54,6 +54,10 @@ const APOCALYPSE_TIME  = 1800.0      # 30 minutes
 # Boss tracking to prevent crashes
 var boss_spawn_times: Array[float] = []
 var first_boss_spawned: bool = false
+
+# PERFORMANCE OPTIMIZATION - Enemy cap to prevent FPS drops
+const MAX_ENEMIES_ON_SCREEN = 300  # Cap at 300 enemies
+var current_enemy_count: int = 0
 
 # ------------------------------------------------------------------
 # 5. _READY
@@ -89,11 +93,13 @@ func _input(event: InputEvent) -> void:
 		get_tree().reload_current_scene()
 
 func open_pause_menu():
+	print("⏸️ Opening pause menu...")
 	get_tree().paused = true
 	var pause_menu = PAUSE_MENU_SCENE.instantiate()
 	pause_menu.player = player
 	pause_menu.main_game = self
 	ui_layer.add_child(pause_menu)
+	print("✅ Pause menu added to scene!")
 
 # ------------------------------------------------------------------
 # 6. MAIN LOOP
@@ -112,8 +118,8 @@ func _process(delta: float) -> void:
 
 	# 90-SEC TANKIER + FASTER (was 2 min)
 	if fmod(game_time, TANKIER_INTERVAL) < delta:
-		difficulty_mult += 1.0  # Was 0.5, now doubles HP every 90 sec!
-		spawn_rate = max(0.2, spawn_rate * 0.75)  # Was 0.85, now 25% faster!
+		difficulty_mult += 0.5  # REDUCED! Was 1.0, now 0.5 per interval
+		spawn_rate = max(0.4, spawn_rate * 0.85)  # SLOWER RAMP! Was 0.75, now 0.85 
 		print("⚡ DIFFICULTY UP! HP×%.1f | Spawn: %.2fs" % [difficulty_mult, spawn_rate])
 
 	# FIRST BOSS @ 2:30 (for testing)
@@ -150,17 +156,26 @@ func _process(delta: float) -> void:
 			spawn_colossus()
 
 # ------------------------------------------------------------------
-# 7. SPAWN MOB – 4-SIDE OFF-SCREEN
+# 7. SPAWN MOB – 4-SIDE OFF-SCREEN (WITH PERFORMANCE CAP)
 # ------------------------------------------------------------------
 func spawn_mob() -> void:
 	if not is_instance_valid(player):
 		return
 	
-	# Spawn 2-3 enemies per cycle (was 1)
-	var enemies_to_spawn = randi_range(2, 3)
+	# PERFORMANCE: Don't spawn if at enemy cap
+	if current_enemy_count >= MAX_ENEMIES_ON_SCREEN:
+		return
+	
+	# BALANCED: Start with 1-2 enemies, gradually increase
+	var enemies_to_spawn = randi_range(1, 2)  # Start with 1-2 for action
+	if game_time > 180:  # After 3 minutes, spawn 2 enemies
+		enemies_to_spawn = 2
+	if game_time > 360:  # After 6 minutes, spawn 2-3 enemies
+		enemies_to_spawn = randi_range(2, 3)
 	
 	for i in range(enemies_to_spawn):
-		spawn_enemy(MOB_SCENE)
+		if current_enemy_count < MAX_ENEMIES_ON_SCREEN:
+			spawn_enemy(MOB_SCENE)
 
 # Spawn void mites (same stats, different sprite)
 func spawn_void_mite() -> void:
@@ -174,7 +189,7 @@ func spawn_colossus() -> void:
 		return
 	spawn_enemy(NEBULITH_COLOSSUS_SCENE)
 
-# Generic enemy spawner
+# Generic enemy spawner - FIXED: ALWAYS SPAWN OFFSCREEN
 func spawn_enemy(enemy_scene: PackedScene) -> void:
 	var mob = enemy_scene.instantiate()
 
@@ -184,34 +199,42 @@ func spawn_enemy(enemy_scene: PackedScene) -> void:
 	mob.speed       *= (1.0 + game_time / 600.0)
 	mob.xp_value    += int(game_time / 30.0)
 
-	# FULL SCREEN BOUNDS – IGNORES ZOOM
+	# Calculate spawn position COMPLETELY offscreen
 	var screen_size = get_viewport_rect().size
 	var cam_pos = player.global_position
-	var left   = cam_pos.x - screen_size.x * 0.5
-	var right  = cam_pos.x + screen_size.x * 0.5
-	var top    = cam_pos.y - screen_size.y * 0.5
-	var bottom = cam_pos.y + screen_size.y * 0.5
+	
+	# Add extra padding for enemy size (enemies can be 20-40 pixels)
+	const ENEMY_SIZE_PADDING = 50.0
+	var total_buffer = OFFSCREEN_BUFFER + ENEMY_SIZE_PADDING
+	
+	var left   = cam_pos.x - (screen_size.x * 0.5)
+	var right  = cam_pos.x + (screen_size.x * 0.5)
+	var top    = cam_pos.y - (screen_size.y * 0.5)
+	var bottom = cam_pos.y + (screen_size.y * 0.5)
 
-	# RANDOM SIDE
+	# Pick random side (0=top, 1=right, 2=bottom, 3=left)
 	var side = randi() % 4
 	var spawn_pos: Vector2
 
 	match side:
-		0: # TOP
-			spawn_pos.x = randf_range(left, right)
-			spawn_pos.y = top - OFFSCREEN_BUFFER
-		1: # RIGHT
-			spawn_pos.x = right + OFFSCREEN_BUFFER
-			spawn_pos.y = randf_range(top, bottom)
-		2: # BOTTOM
-			spawn_pos.x = randf_range(left, right)
-			spawn_pos.y = bottom + OFFSCREEN_BUFFER
-		3: # LEFT
-			spawn_pos.x = left - OFFSCREEN_BUFFER
-			spawn_pos.y = randf_range(top, bottom)
+		0: # TOP - spawn ABOVE screen
+			spawn_pos.x = randf_range(left - total_buffer, right + total_buffer)  # Wider range
+			spawn_pos.y = top - total_buffer  # Well above screen
+		1: # RIGHT - spawn to RIGHT of screen
+			spawn_pos.x = right + total_buffer  # Well to the right
+			spawn_pos.y = randf_range(top - total_buffer, bottom + total_buffer)  # Taller range
+		2: # BOTTOM - spawn BELOW screen
+			spawn_pos.x = randf_range(left - total_buffer, right + total_buffer)  # Wider range
+			spawn_pos.y = bottom + total_buffer  # Well below screen
+		3: # LEFT - spawn to LEFT of screen
+			spawn_pos.x = left - total_buffer  # Well to the left
+			spawn_pos.y = randf_range(top - total_buffer, bottom + total_buffer)  # Taller range
 
 	mob.global_position = spawn_pos
 	add_child(mob)
+	
+	# PERFORMANCE: Track enemy count
+	current_enemy_count += 1
 
 	if mob.has_signal("died"):
 		mob.died.connect(_on_mob_died.bind(mob))
@@ -295,6 +318,9 @@ func has_boss_alive() -> bool:
 func _on_mob_died(dead_mob: Node) -> void:
 	if not is_instance_valid(dead_mob):
 		return
+	
+	# PERFORMANCE: Decrement enemy count
+	current_enemy_count = max(0, current_enemy_count - 1)
 	
 	# Track kills
 	enemies_killed += 1
@@ -388,7 +414,111 @@ func give_chest_buff(buff_type: String) -> void:
 	
 	boss_items_collected.append(buff_name)
 
-# Show item UI when chest is opened
+# FIXED: Show chest rarity animation with color swapping
+func show_chest_animation(item_data: Dictionary, final_rarity: String):
+	# Create the UI overlay
+	var overlay = Control.new()
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	
+	# Dark background
+	var bg = ColorRect.new()
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bg.color = Color(0, 0, 0, 0.9)
+	overlay.add_child(bg)
+	
+	# Chest box
+	var box = PanelContainer.new()
+	box.position = Vector2(get_viewport().size.x / 2 - 200, get_viewport().size.y / 2 - 150)
+	box.size = Vector2(400, 300)
+	
+	var vbox = VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 20)
+	box.add_child(vbox)
+	
+	var rarity_label = Label.new()
+	rarity_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	rarity_label.add_theme_font_size_override("font_size", 48)
+	rarity_label.text = "ROLLING..."
+	vbox.add_child(rarity_label)
+	
+	var item_label = Label.new()
+	item_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	item_label.add_theme_font_size_override("font_size", 24)
+	item_label.text = ""
+	vbox.add_child(item_label)
+	
+	var desc_label = Label.new()
+	desc_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	desc_label.add_theme_font_size_override("font_size", 18)
+	desc_label.text = ""
+	vbox.add_child(desc_label)
+	
+	overlay.add_child(box)
+	ui_layer.add_child(overlay)
+	
+	# Color swap animation
+	var rarity_colors = {
+		"yellow": Color(1.0, 0.9, 0.3),
+		"blue": Color(0.3, 0.6, 1.0),
+		"green": Color(0.2, 1.0, 0.3),
+		"purple": Color(0.8, 0.3, 1.0)
+	}
+	
+	var rarity_names = ["yellow", "blue", "green", "purple"]
+	var swap_count = 0
+	var max_swaps = 20  # Fast swapping for 3 seconds
+	var swap_interval = 0.15
+	
+	var swap_timer = Timer.new()
+	swap_timer.wait_time = swap_interval
+	swap_timer.one_shot = false
+	overlay.add_child(swap_timer)
+	
+	swap_timer.timeout.connect(func():
+		swap_count += 1
+		
+		if swap_count >= max_swaps:
+			# Show final result
+			var final_color = rarity_colors[final_rarity]
+			rarity_label.text = final_rarity.to_upper()
+			rarity_label.add_theme_color_override("font_color", final_color)
+			item_label.text = item_data.name
+			item_label.add_theme_color_override("font_color", final_color)
+			desc_label.text = item_data.description
+			swap_timer.stop()
+			
+			# Auto-close after 2 seconds and apply item
+			await get_tree().create_timer(2.0).timeout
+			
+			# Apply item to player
+			var chest_nodes = get_tree().get_nodes_in_group("chest")
+			for chest in chest_nodes:
+				if chest.has_method("apply_item_to_player"):
+					chest.apply_item_to_player()
+					break
+			
+			# Track collected item
+			items_collected.append({
+				"name": item_data.name,
+				"tier": final_rarity,
+				"description": item_data.description
+			})
+			
+			overlay.queue_free()
+			get_tree().paused = false
+		else:
+			# Randomly swap colors
+			var random_rarity = rarity_names[randi() % rarity_names.size()]
+			var color = rarity_colors[random_rarity]
+			rarity_label.text = random_rarity.to_upper()
+			rarity_label.add_theme_color_override("font_color", color)
+			box.modulate = color
+	)
+	
+	swap_timer.start()
+
+# Show item UI when chest is opened (OLD METHOD - REPLACED BY ANIMATION)
 func show_item_ui(item_data: Dictionary, tier: String):
 	if not ITEM_UI_SCENE:
 		return
@@ -473,4 +603,4 @@ func _on_player_death() -> void:
 
 func _on_exit_to_menu():
 	get_tree().paused = false
-	get_tree().reload_current_scene()  # Restart for now
+	get_tree().change_scene_to_file("res://MainMenu.tscn")  # Go to main menu

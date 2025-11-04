@@ -12,7 +12,7 @@ var player_stats = {
 	"xp_to_next_level": 30,
 	"max_health": 100.0,
 	"current_health": 100.0,
-	"health_regen": 0.5,
+	"health_regen": 0.2,  # REDUCED from 0.5 - was too strong
 	"shield": 50.0,
 	"shield_recharge_rate": 5.0,
 	"lifesteal": 0.0,
@@ -155,6 +155,8 @@ func apply_starting_bonuses():
 func _physics_process(delta):
 	var direction = Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
 	velocity = direction * player_stats.speed
+	# FIXED: move_and_slide() doesn't push enemies anymore if collision layers are set correctly
+	# Player should be on layer 1, enemies on layer 2, player collision_mask should NOT include layer 2
 	move_and_slide()
 
 	var new_pos = global_position
@@ -178,10 +180,10 @@ func _physics_process(delta):
 		if player_stats.current_health <= 0:
 			health_depleted.emit()
 
+	# FIXED: XP vials now get pulled to player instead of instant pickup
 	for area in pickup_radius.get_overlapping_areas():
-		if area.is_in_group("xp_vial"):
-			pickup_xp(area.value)
-			area.queue_free()
+		if area.is_in_group("xp_vial") and area.has_method("start_pull"):
+			area.start_pull(self)
 
 # ==============================================================
 # 8. XP + LEVEL UP
@@ -195,7 +197,10 @@ func pickup_xp(amount: int) -> void:
 	while player_stats.current_xp >= player_stats.xp_to_next_level:
 		player_stats.current_xp -= player_stats.xp_to_next_level
 		player_stats.level += 1
-		player_stats.xp_to_next_level = int(50 + pow(player_stats.level, 1.4) * 15)
+		# FIXED: Much slower scaling - was reaching level 65 in 7 minutes!
+		# Changed from: 50 + pow(level, 1.4) * 15
+		# New formula: 100 + pow(level, 1.8) * 25 for exponential growth
+		player_stats.xp_to_next_level = int(100 + pow(player_stats.level, 1.8) * 25)
 		
 		if get_parent().has_method("show_level_up_options"):
 			get_parent().show_level_up_options()

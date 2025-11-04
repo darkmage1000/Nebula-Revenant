@@ -1,10 +1,18 @@
-# Chest.gd – COMPLETE TIERED LOOT SYSTEM
+# Chest.gd \u2013 FIXED: Shows rarity animation and only gives 1 item
 extends Area2D
 
 signal chest_opened(item_data: Dictionary)
 
 # Chest tier - set by main_game when spawning
 var tier: String = "yellow"  # yellow, blue, green, purple
+
+# Rarity probabilities for the roll animation
+var rarity_weights = {
+	"yellow": 50,  # 50% chance
+	"blue": 30,    # 30% chance  
+	"green": 15,   # 15% chance
+	"purple": 5    # 5% chance
+}
 
 # Item database with all tiers
 var item_pool = {
@@ -53,10 +61,10 @@ var item_pool = {
 	"blue": [  # UNCOMMON - Better boosts + special effects
 		{
 			"name": "Vampire Fang",
-			"description": "+8% Lifesteal",
+			"description": "+3% Lifesteal",  # REDUCED from 8% - was too strong
 			"effect_type": "stat",
 			"stat": "lifesteal",
-			"value": 0.08,
+			"value": 0.03,
 			"icon_color": Color(0.3, 0.6, 1.0)
 		},
 		{
@@ -103,10 +111,10 @@ var item_pool = {
 	"green": [  # RARE - Powerful effects
 		{
 			"name": "Phoenix Feather",
-			"description": "+5 HP/sec Regeneration",
+			"description": "+2 HP/sec Regeneration",  # REDUCED from 5 - was too strong
 			"effect_type": "stat",
 			"stat": "health_regen",
-			"value": 5.0,
+			"value": 2.0,
 			"icon_color": Color(0.2, 1.0, 0.3)
 		},
 		{
@@ -161,11 +169,11 @@ var item_pool = {
 		},
 		{
 			"name": "Immortal's Blessing",
-			"description": "+300 HP + 10 HP/sec Regen",
+			"description": "+300 HP + 4 HP/sec Regen",  # REDUCED regen from 10
 			"effect_type": "multi",
 			"effects": [
 				{"stat": "max_health", "value": 300},
-				{"stat": "health_regen", "value": 10.0}
+				{"stat": "health_regen", "value": 4.0}
 			],
 			"icon_color": Color(0.8, 0.3, 1.0)
 		},
@@ -191,10 +199,10 @@ var item_pool = {
 		},
 		{
 			"name": "Soul Reaper",
-			"description": "+25% Lifesteal + +100% Damage",
+			"description": "+10% Lifesteal + +100% Damage",  # REDUCED lifesteal from 25%
 			"effect_type": "multi",
 			"effects": [
-				{"stat": "lifesteal", "value": 0.25},
+				{"stat": "lifesteal", "value": 0.10},
 				{"stat": "damage_mult", "value": 1.0}
 			],
 			"icon_color": Color(0.8, 0.3, 1.0)
@@ -216,6 +224,7 @@ var item_pool = {
 
 var selected_item: Dictionary = {}
 var is_opened: bool = false
+var rolled_rarity: String = ""
 
 @onready var sprite = $Sprite2D
 @onready var glow = $Glow
@@ -223,7 +232,7 @@ var is_opened: bool = false
 func _ready():
 	add_to_group("chest")
 	
-	# PHASE 3 FIX: Ensure chest can detect player
+	# Ensure chest can detect player
 	collision_layer = 1
 	collision_mask = 1
 	monitoring = true
@@ -235,10 +244,7 @@ func _ready():
 	# Animate chest (bobbing + glow)
 	animate_chest()
 	
-	# Select random item from this tier
-	select_random_item()
-	
-	# PHASE 3 FIX: Connect signal if not already connected
+	# Connect signal if not already connected
 	if not body_entered.is_connected(_on_body_entered):
 		body_entered.connect(_on_body_entered)
 
@@ -269,12 +275,6 @@ func animate_chest():
 		glow_tween.tween_property(glow, "scale", Vector2(1.2, 1.2), 0.8)
 		glow_tween.tween_property(glow, "scale", Vector2(1.0, 1.0), 0.8)
 
-func select_random_item():
-	var items = item_pool.get(tier, item_pool["yellow"])
-	if items.size() > 0:
-		selected_item = items[randi() % items.size()].duplicate()
-		print("Chest contains: ", selected_item.name)
-
 func _on_body_entered(body: Node2D):
 	if body.name == "Player" and not is_opened:
 		open_chest()
@@ -285,16 +285,51 @@ func open_chest():
 	
 	is_opened = true
 	
-	# Show item UI
-	var main_game = get_tree().root.get_node("MainGame")
-	if main_game and main_game.has_method("show_item_ui"):
-		main_game.show_item_ui(selected_item, tier)
+	# DON'T PAUSE - just apply item directly
+	# Roll for rarity first
+	rolled_rarity = roll_rarity()
 	
-	# Apply item effect immediately (player chooses to take or not in UI)
+	# Select item from rolled rarity
+	select_item_from_rarity(rolled_rarity)
+	
+	# Apply item immediately
 	apply_item_to_player()
+	
+	# Track in main game
+	var main_game = get_tree().root.get_node("MainGame")
+	if main_game:
+		main_game.items_collected.append({
+			"name": selected_item.name,
+			"tier": rolled_rarity,
+			"description": selected_item.description
+		})
+		print("✨ Collected [%s] %s: %s" % [rolled_rarity.to_upper(), selected_item.name, selected_item.description])
 	
 	# Visual feedback
 	play_open_animation()
+
+func roll_rarity() -> String:
+	# Calculate total weight
+	var total_weight = 0
+	for weight in rarity_weights.values():
+		total_weight += weight
+	
+	# Roll
+	var roll = randf() * total_weight
+	var current_weight = 0
+	
+	for rarity in ["yellow", "blue", "green", "purple"]:
+		current_weight += rarity_weights[rarity]
+		if roll <= current_weight:
+			return rarity
+	
+	return "yellow"  # Fallback
+
+func select_item_from_rarity(rarity: String):
+	var items = item_pool.get(rarity, item_pool["yellow"])
+	if items.size() > 0:
+		selected_item = items[randi() % items.size()].duplicate()
+		print("Chest rolled %s rarity: %s" % [rarity.to_upper(), selected_item.name])
 
 func apply_item_to_player():
 	var player = get_tree().root.get_node("MainGame/Player")
@@ -323,7 +358,7 @@ func apply_item_to_player():
 					selected_item.value
 				)
 	
-	print("✨ Applied item: ", selected_item.name)
+	print("\u2728 Applied item: ", selected_item.name)
 
 func play_open_animation():
 	# Chest opens and disappears

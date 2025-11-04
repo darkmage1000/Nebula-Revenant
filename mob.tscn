@@ -9,7 +9,7 @@ radius = 20.0
 
 [node name="Mob" type="CharacterBody2D" groups=["mob"]]
 collision_layer = 2
-collision_mask = 7
+collision_mask = 2
 script = ExtResource("1_dy6sc")
 
 [node name="MobHealthBar" parent="." instance=ExtResource("3_ubaqv")]
