@@ -81,6 +81,14 @@ func explode():
 				if burn_enabled and burn_damage > 0 and enemy.has_method("start_dot"):
 					enemy.start_dot("grenade_burn", burn_damage * 0.3, 3, Color(1.0, 0.4, 0.0))
 	
+	# Also damage asteroids in range!
+	var asteroids_in_range = get_tree().get_nodes_in_group("asteroid")
+	for asteroid in asteroids_in_range:
+		if is_instance_valid(asteroid) and asteroid is Node2D:
+			var dist = global_position.distance_to(asteroid.global_position)
+			if dist <= final_aoe and asteroid.has_method("take_damage"):
+				asteroid.take_damage(damage)
+	
 	# Remove grenade
 	queue_free()
 
@@ -88,8 +96,9 @@ func spawn_explosion_effect():
 	# Always use simple explosion for reliable visual feedback
 	create_simple_explosion()
 
+# OPTIMIZED explosion - uses simple ColorRect instead of textures
 func create_simple_explosion():
-	# Create a simple visual explosion effect
+	# Use lightweight ColorRect circles instead of image textures for better FPS
 	var explosion = Node2D.new()
 	explosion.global_position = global_position
 	get_parent().add_child(explosion)
@@ -97,38 +106,28 @@ func create_simple_explosion():
 	# Calculate final AOE size
 	var final_aoe = aoe * aoe_mult
 	
-	# Create multiple expanding circles for better visual
-	for i in range(3):
-		var sprite = Sprite2D.new()
-		var circle_size = final_aoe * (0.8 + i * 0.15)  # Different sizes
-		var circle_texture = create_circle_texture(circle_size)
-		sprite.texture = circle_texture
-		sprite.modulate = Color(1.0, 0.5 - i * 0.1, 0.0, 0.8 - i * 0.2)  # Orange gradient
-		explosion.add_child(sprite)
+	# Create 2 circles only (was 3) for better performance
+	for i in range(2):
+		# Use canvas drawing instead of sprites
+		var circle_drawer = Node2D.new()
+		explosion.add_child(circle_drawer)
 		
-		# Animate each circle
+		var circle_size = final_aoe * (1.0 + i * 0.2)
+		var circle_color = Color(1.0, 0.5 - i * 0.1, 0.0, 0.7 - i * 0.2)
+		
+		# Draw circle using custom draw function
+		circle_drawer.draw.connect(func():
+			circle_drawer.draw_circle(Vector2.ZERO, circle_size, circle_color)
+		)
+		circle_drawer.queue_redraw()
+		
+		# Simple scale animation
 		var tween = create_tween()
-		tween.set_parallel(true)
-		tween.tween_property(sprite, "scale", Vector2(1.5, 1.5), 0.3 + i * 0.05)
-		tween.tween_property(sprite, "modulate:a", 0.0, 0.3 + i * 0.05)
+		tween.tween_property(circle_drawer, "scale", Vector2(1.3, 1.3), 0.25)
+		tween.parallel().tween_property(circle_drawer, "modulate:a", 0.0, 0.25)
 	
-	# Delete explosion after animation completes
-	get_tree().create_timer(0.5).timeout.connect(func():
+	# Delete explosion quickly
+	get_tree().create_timer(0.3).timeout.connect(func():
 		if is_instance_valid(explosion):
 			explosion.queue_free()
 	)
-
-func create_circle_texture(radius: float) -> ImageTexture:
-	var size = int(radius * 2)
-	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
-	
-	var center = Vector2(size / 2, size / 2)
-	
-	for x in range(size):
-		for y in range(size):
-			var dist = Vector2(x, y).distance_to(center)
-			if dist <= radius:
-				var alpha = 1.0 - (dist / radius) * 0.5
-				img.set_pixel(x, y, Color(1.0, 0.5, 0.0, alpha))
-	
-	return ImageTexture.create_from_image(img)

@@ -40,6 +40,10 @@ collision_mask = 136
 [node name="CollisionShape2D" type="CollisionShape2D" parent="PickupRadius"]
 shape = SubResource("CircleShape2D_i3pqv")
 
+[node name="Camera2D" type="Camera2D" parent="."]
+position_smoothing_enabled = true
+position_smoothing_speed = 8.0
+
 [node name="WeaponContainer" type="Node2D" parent="."]
 
 [connection signal="area_entered" from="PickupRadius" to="." method="_on_pickup_radius_area_entered"]

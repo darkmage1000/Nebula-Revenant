@@ -119,7 +119,7 @@ func _ready():
 		if collision_shape and collision_shape.shape:
 			collision_shape.shape.radius = player_stats.pickup_radius
 	
-	add_weapon("pistol")
+	add_weapon("pistol")  # Starting weapon
 
 func apply_starting_bonuses():
 	if not has_node("/root/SaveManager"):
@@ -159,12 +159,14 @@ func _physics_process(delta):
 	# Player should be on layer 1, enemies on layer 2, player collision_mask should NOT include layer 2
 	move_and_slide()
 
-	var new_pos = global_position
-	var screen_size = get_viewport_rect().size
-	const PLAYER_SIZE = 50.0
-	new_pos.x = clamp(new_pos.x, PLAYER_SIZE, screen_size.x - PLAYER_SIZE)
-	new_pos.y = clamp(new_pos.y, PLAYER_SIZE, screen_size.y - PLAYER_SIZE)
-	global_position = new_pos
+	# MAP BOUNDARIES - Keep player within 70,000 x 70,000 map
+	var main_game = get_parent()
+	if main_game and main_game.has_method("get"):
+		var map_width = main_game.get("MAP_WIDTH")
+		var map_height = main_game.get("MAP_HEIGHT")
+		if map_width and map_height:
+			global_position.x = clamp(global_position.x, 0, map_width)
+			global_position.y = clamp(global_position.y, 0, map_height)
 
 	player_stats.current_health = min(
 		player_stats.current_health + player_stats.health_regen * delta,
@@ -184,6 +186,14 @@ func _physics_process(delta):
 	for area in pickup_radius.get_overlapping_areas():
 		if area.is_in_group("xp_vial") and area.has_method("start_pull"):
 			area.start_pull(self)
+		# Health packs
+		elif area.is_in_group("healthpack"):
+			pickup_healthpack()
+			area.queue_free()
+		# Powerups
+		elif area.is_in_group("powerup"):
+			pickup_powerup(area)
+			area.queue_free()
 
 # ==============================================================
 # 8. XP + LEVEL UP
@@ -197,10 +207,10 @@ func pickup_xp(amount: int) -> void:
 	while player_stats.current_xp >= player_stats.xp_to_next_level:
 		player_stats.current_xp -= player_stats.xp_to_next_level
 		player_stats.level += 1
-		# FIXED: Much slower scaling - was reaching level 65 in 7 minutes!
-		# Changed from: 50 + pow(level, 1.4) * 15
-		# New formula: 100 + pow(level, 1.8) * 25 for exponential growth
-		player_stats.xp_to_next_level = int(100 + pow(player_stats.level, 1.8) * 25)
+		# REBALANCED for level 80 at 30 minutes!
+		# Formula: 50 + pow(level, 1.5) * 12 for smoother progression
+		# This allows reaching level 80 by 30 mins with good play
+		player_stats.xp_to_next_level = int(50 + pow(player_stats.level, 1.5) * 12)
 		
 		if get_parent().has_method("show_level_up_options"):
 			get_parent().show_level_up_options()
@@ -379,3 +389,67 @@ func collect_currency(amount: int):
 	var final_amount = int(amount * multiplier)
 	run_stats.shards_collected += final_amount
 	print("Collected shards: +%d (Total: %d)" % [final_amount, run_stats.shards_collected])
+
+# ==============================================================
+# 15. POWERUPS FROM ASTEROIDS
+# ==============================================================
+func pickup_healthpack():
+	player_stats.current_health = min(
+		player_stats.current_health + 25,
+		player_stats.max_health
+	)
+	print("❤️ Picked up health pack! +25 HP")
+
+func pickup_powerup(powerup: Area2D):
+	var powerup_type = powerup.get_meta("powerup_type", "unknown")
+	
+	match powerup_type:
+		"invincible":
+			activate_invincibility()
+		"magnet":
+			activate_magnet()
+		"attack_speed":
+			activate_triple_attack_speed()
+		"nuke":
+			activate_nuke()
+		_:
+			print("⚠️ Unknown powerup type: %s" % powerup_type)
+
+func activate_invincibility():
+	print("⭐ INVINCIBLE for 10 seconds!")
+	player_stats.armor += 1000  # Effectively invincible
+	await get_tree().create_timer(10.0).timeout
+	player_stats.armor = max(0, player_stats.armor - 1000)
+	print("⭐ Invincibility ended")
+
+func activate_magnet():
+	print("🧲 MAGNET activated! Collecting all XP on map...")
+	var vials = get_tree().get_nodes_in_group("xp_vial")
+	for vial in vials:
+		if is_instance_valid(vial) and vial.has_method("start_pull"):
+			vial.start_pull(self)
+			# Instant collection
+			if vial.has_method("get") and "value" in vial:
+				pickup_xp(vial.value)
+				vial.queue_free()
+
+func activate_triple_attack_speed():
+	print("⚡ TRIPLE ATTACK SPEED for 10 seconds!")
+	var original_speed = player_stats.attack_speed_mult
+	player_stats.attack_speed_mult *= 3.0
+	_update_all_weapons()
+	await get_tree().create_timer(10.0).timeout
+	player_stats.attack_speed_mult = original_speed
+	_update_all_weapons()
+	print("⚡ Triple attack speed ended")
+
+func activate_nuke():
+	print("💣 NUKE! Wiping all non-boss enemies from screen!")
+	var enemies = get_tree().get_nodes_in_group("mob")
+	var killed = 0
+	for enemy in enemies:
+		if is_instance_valid(enemy) and not enemy.is_in_group("boss"):
+			if enemy.has_method("take_damage"):
+				enemy.take_damage(99999)  # Instant kill
+				killed += 1
+	print("💣 Nuke killed %d enemies!" % killed)

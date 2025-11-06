@@ -72,8 +72,9 @@ var upgrade_options: Array = [
 	{"type": "weapon", "weapon": "grenade", "key": "projectiles", "value": 1, "label": "💣 Grenade: +1 Grenade", "desc": "Throw multiple grenades", "rarity": "legendary"},
 	
 	# ==================== AURA UPGRADES ====================
-	{"type": "weapon", "weapon": "aura", "key": "damage", "value": 3, "label": "☢️ Aura: +3 Damage", "desc": "Stronger radiation damage", "rarity": "common"},
-	{"type": "weapon", "weapon": "aura", "key": "damage", "value": 6, "label": "☢️ Aura: +6 Damage", "desc": "Intense radiation", "rarity": "uncommon"},
+	{"type": "weapon", "weapon": "aura", "key": "damage", "value": 5, "label": "☢️ Aura: +5 Damage", "desc": "Stronger radiation damage", "rarity": "common"},
+	{"type": "weapon", "weapon": "aura", "key": "damage", "value": 10, "label": "☢️ Aura: +10 Damage", "desc": "Intense radiation", "rarity": "uncommon"},
+	{"type": "weapon", "weapon": "aura", "key": "damage", "value": 20, "label": "☢️ Aura: +20 Damage", "desc": "Devastating radiation field", "rarity": "rare"},
 	{"type": "weapon", "weapon": "aura", "key": "aoe", "value": 25, "label": "☢️ Aura: +25 Radius", "desc": "Larger damage field", "rarity": "uncommon"},
 	{"type": "weapon", "weapon": "aura", "key": "aoe", "value": 50, "label": "☢️ Aura: +50 Radius", "desc": "Massive damage field", "rarity": "rare"},
 	{"type": "weapon", "weapon": "aura", "key": "attack_speed", "value": 0.25, "label": "☢️ Aura: +25% Tick Rate", "desc": "Damage enemies more frequently", "rarity": "uncommon"},
@@ -94,8 +95,18 @@ func _ready() -> void:
 	for child in button_container.get_children():
 		child.queue_free()
 	
-	# Filter upgrade options based on what player has
+	# OFFER 2ND WEAPON AS COMMON OPTION if player only has 1 weapon
+	# But don't force it - let them choose!
 	var available_pool = _filter_available_upgrades()
+	
+	# If player has 1 weapon, make weapon unlocks COMMON rarity to appear often
+	if player and player.player_stats.current_weapons.size() == 1:
+		for opt in upgrade_options:
+			if opt.type == "unlock" and not player.player_stats.current_weapons.has(opt.weapon):
+				# Create a common rarity version of this weapon unlock
+				var common_weapon = opt.duplicate()
+				common_weapon["rarity"] = "common"  # Make it common!
+				available_pool.append(common_weapon)
 	
 	# Randomly pick 3 upgrades with luck-based rarity weighting
 	var selected = []

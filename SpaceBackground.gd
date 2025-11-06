@@ -1,5 +1,9 @@
-# SpaceBackground.gd - Static space background (no animations)
+# SpaceBackground.gd - MASSIVE TILED space background for exploration
 extends Node2D
+
+# Map dimensions (matches main_game.gd)
+const MAP_WIDTH = 70000.0
+const MAP_HEIGHT = 70000.0
 
 # Star layers for parallax effect
 var star_layers: Array[Array] = [[], [], []]
@@ -17,14 +21,12 @@ func _ready():
 	queue_redraw()
 
 func generate_stars():
-	var screen_size = get_viewport_rect().size
-	
-	# Fewer, dimmer stars for darker atmosphere
+	# Generate stars across ENTIRE massive map
 	for layer in range(3):
-		var num_stars = 60 - (layer * 15)  # Fewer stars overall
+		var num_stars = 2000 - (layer * 500)  # Many more stars for massive map
 		for i in range(num_stars):
 			var star = {
-				"pos": Vector2(randf() * screen_size.x * 1.5, randf() * screen_size.y * 1.5),
+				"pos": Vector2(randf() * MAP_WIDTH, randf() * MAP_HEIGHT),
 				"size": randf_range(0.5, 2.0 - layer * 0.3),
 				"brightness": randf_range(0.3, 0.7)  # Dimmer stars
 			}
@@ -33,25 +35,21 @@ func generate_stars():
 var static_nebula_positions: Array = []
 
 func generate_static_nebula():
-	var screen_size = get_viewport_rect().size
-	
-	# Generate fixed nebula cloud positions
-	var num_clouds = 4
+	# Generate nebula clouds scattered across the massive map
+	var num_clouds = 100  # Many more clouds for massive map
 	for i in range(num_clouds):
 		var cloud_data = {
 			"center": Vector2(
-				(i * screen_size.x / num_clouds) + randf_range(-100, 100),
-				screen_size.y / 2 + randf_range(-200, 200)
+				randf() * MAP_WIDTH,
+				randf() * MAP_HEIGHT
 			),
 			"color": nebula_colors[i % nebula_colors.size()]
 		}
 		static_nebula_positions.append(cloud_data)
 
 func _draw():
-	var screen_size = get_viewport_rect().size
-	
-	# Draw very dark space background
-	draw_rect(Rect2(Vector2.ZERO, screen_size), Color(0.01, 0.01, 0.05))
+	# Draw very dark space background covering entire map
+	draw_rect(Rect2(Vector2.ZERO, Vector2(MAP_WIDTH, MAP_HEIGHT)), Color(0.01, 0.01, 0.05))
 	
 	# Draw static nebula clouds
 	draw_static_nebula()

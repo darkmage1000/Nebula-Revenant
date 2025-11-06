@@ -9,7 +9,7 @@ var _shape: CollisionShape2D = null
 var overlapping_mobs: Dictionary = {}
 var aura_key: String = ""
 var tick_timer: float = 0.0
-const TICK_INTERVAL: float = 0.5
+const TICK_INTERVAL: float = 0.25  # FASTER! Was 0.5, now 0.25 (4 ticks/sec instead of 2)
 const FLOATING_DMG_SCENE = preload("res://FloatingDmg.tscn")
 
 func _ready() -> void:

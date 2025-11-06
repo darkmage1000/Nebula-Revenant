@@ -97,8 +97,19 @@ func update_stats():
 		for weapon_key in player.weapon_damage_dealt:
 			total_damage += player.weapon_damage_dealt[weapon_key]
 		
+		# Merge "bullet" into "pistol" for display
+		var merged_damage = {}
 		for weapon_key in player.weapon_damage_dealt:
-			var dmg = player.weapon_damage_dealt[weapon_key]
+			var display_key = weapon_key
+			if weapon_key == "bullet":
+				display_key = "pistol"
+			
+			if not merged_damage.has(display_key):
+				merged_damage[display_key] = 0
+			merged_damage[display_key] += player.weapon_damage_dealt[weapon_key]
+		
+		for weapon_key in merged_damage:
+			var dmg = merged_damage[weapon_key]
 			var percent = (dmg / float(total_damage)) * 100 if total_damage > 0 else 0
 			stats_text += "💢 %s: %.0f (%.1f%%)\n" % [weapon_key.capitalize(), dmg, percent]
 		

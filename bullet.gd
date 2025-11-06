@@ -23,6 +23,8 @@ func _process(delta):
 func _on_body_entered(body):
 	if body.is_in_group("mob"):
 		apply_hit(body)
+	elif body.is_in_group("asteroid"):
+		apply_asteroid_hit(body)
 
 func apply_hit(mob):
 	if not is_instance_valid(mob): return
@@ -62,3 +64,13 @@ func apply_hit(mob):
 		pierce -= 1
 	else:
 		queue_free()
+
+func apply_asteroid_hit(asteroid):
+	if not is_instance_valid(asteroid): return
+	
+	# Damage asteroid
+	if asteroid.has_method("take_damage"):
+		asteroid.take_damage(damage)
+	
+	# Bullets always destroyed by asteroids (no pierce)
+	queue_free()
