@@ -20,11 +20,15 @@ func _ready():
 func _process(delta):
 	global_position += Vector2(800, 0).rotated(rotation) * delta
 
+# Handle collision with CharacterBody2D enemies
 func _on_body_entered(body):
 	if body.is_in_group("mob"):
 		apply_hit(body)
-	elif body.is_in_group("asteroid"):
-		apply_asteroid_hit(body)
+
+# Handle collision with Area2D asteroids
+func _on_area_entered(area):
+	if area.is_in_group("asteroid"):
+		apply_asteroid_hit(area)
 
 func apply_hit(mob):
 	if not is_instance_valid(mob): return

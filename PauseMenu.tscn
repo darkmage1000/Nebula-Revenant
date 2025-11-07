@@ -92,13 +92,25 @@ theme_override_constants/separation = 20
 alignment = 1
 
 [node name="ResumeButton" type="Button" parent="Panel/VBoxContainer/ButtonsContainer"]
-custom_minimum_size = Vector2(200, 50)
-layout_mode = 2
-theme_override_font_sizes/font_size = 20
-text = "▶️ Resume (ESC)"
-
-[node name="QuitButton" type="Button" parent="Panel/VBoxContainer/ButtonsContainer"]
 custom_minimum_size = Vector2(150, 50)
 layout_mode = 2
-theme_override_font_sizes/font_size = 20
+theme_override_font_sizes/font_size = 18
+text = "▶️ Resume"
+
+[node name="SaveButton" type="Button" parent="Panel/VBoxContainer/ButtonsContainer"]
+custom_minimum_size = Vector2(150, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "💾 Save Game"
+
+[node name="MainMenuButton" type="Button" parent="Panel/VBoxContainer/ButtonsContainer"]
+custom_minimum_size = Vector2(150, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "🏠 Main Menu"
+
+[node name="QuitButton" type="Button" parent="Panel/VBoxContainer/ButtonsContainer"]
+custom_minimum_size = Vector2(120, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
 text = "🚪 Quit"

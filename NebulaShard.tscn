@@ -7,7 +7,7 @@ radius = 20.0
 
 [node name="NebulaShard" type="Area2D"]
 collision_layer = 8
-collision_mask = 1
+collision_mask = 5
 monitoring = true
 script = ExtResource("1_shard")
 
@@ -25,4 +25,5 @@ texture = preload("res://gem.png")
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("shard_collision")
 
+[connection signal="area_entered" from="." to="." method="_on_area_entered"]
 [connection signal="body_entered" from="." to="." method="_on_body_entered"]

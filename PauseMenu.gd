@@ -1,4 +1,4 @@
-# PauseMenu.gd – PAUSE MENU WITH STATS PAGE
+# PauseMenu.gd – PAUSE MENU WITH MAIN MENU OPTION
 extends Control
 
 var player: CharacterBody2D = null
@@ -6,6 +6,8 @@ var main_game: Node2D = null
 
 @onready var stats_label = $Panel/VBoxContainer/ScrollContainer/StatsLabel
 @onready var resume_button = $Panel/VBoxContainer/ButtonsContainer/ResumeButton
+@onready var save_button = $Panel/VBoxContainer/ButtonsContainer/SaveButton
+@onready var main_menu_button = $Panel/VBoxContainer/ButtonsContainer/MainMenuButton
 @onready var quit_button = $Panel/VBoxContainer/ButtonsContainer/QuitButton
 
 func _ready():
@@ -15,6 +17,10 @@ func _ready():
 	# Connect buttons
 	if resume_button:
 		resume_button.pressed.connect(_on_resume_pressed)
+	if save_button:
+		save_button.pressed.connect(_on_save_pressed)
+	if main_menu_button:
+		main_menu_button.pressed.connect(_on_main_menu_pressed)
 	if quit_button:
 		quit_button.pressed.connect(_on_quit_pressed)
 	
@@ -24,6 +30,7 @@ func _ready():
 	print("✅ Pause menu loaded!")
 
 func _input(event):
+	# Only handle ESC if we're still processing input (not going to main menu)
 	if event.is_action_pressed("ui_cancel"):  # ESC key
 		_on_resume_pressed()
 		get_viewport().set_input_as_handled()
@@ -173,10 +180,63 @@ func update_stats():
 
 func _on_resume_pressed():
 	print("▶️ Resuming game...")
+	# Disable input to prevent double-triggering
+	set_process_input(false)
+	set_process(false)
+	# Unpause
 	get_tree().paused = false
+	# Remove this menu
 	queue_free()
+
+func _on_save_pressed():
+	print("💾 Manual save requested...")
+	
+	# Update SaveManager with current stats
+	if has_node("/root/SaveManager") and is_instance_valid(player):
+		var save_manager = get_node("/root/SaveManager")
+		var shards = player.run_stats.get("shards_collected", 0)
+		var level = player.player_stats.get("level", 1)
+		var time = main_game.game_time if main_game else 0.0
+		var kills = main_game.enemies_killed if main_game else 0
+		
+		save_manager.update_run_stats(shards, level, time, kills)
+		
+		if save_manager.manual_save():
+			# Show visual feedback
+			if save_button:
+				var original_text = save_button.text
+				save_button.text = "✅ SAVED!"
+				save_button.disabled = true
+				
+				await get_tree().create_timer(2.0).timeout
+				
+				if is_instance_valid(save_button):
+					save_button.text = original_text
+					save_button.disabled = false
+		else:
+			print("❌ Save failed!")
+	else:
+		print("❌ SaveManager not found!")
+
+func _on_main_menu_pressed():
+	print("🏠 Returning to main menu...")
+	# Disable ALL processing immediately
+	set_process_input(false)
+	set_process(false)
+	set_physics_process(false)
+	# Unpause the game FIRST
+	get_tree().paused = false
+	# Wait one frame to ensure unpause takes effect
+	await get_tree().process_frame
+	# Now change scene
+	get_tree().change_scene_to_file("res://MainMenu.tscn")
 
 func _on_quit_pressed():
 	print("🚪 Quitting game...")
+	# Disable processing
+	set_process_input(false)
+	set_process(false)
+	# Unpause before quitting
 	get_tree().paused = false
+	# Quit
 	get_tree().quit()

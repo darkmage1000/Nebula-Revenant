@@ -1,7 +1,14 @@
-# save_manager.gd - PHASE 4: Persistent save system for meta-progression
+# save_manager.gd - AUTO-SAVE SYSTEM: Saves every run + periodic saves
 extends Node
 
 const SAVE_PATH = "user://nebula_revenant_save.json"
+
+# Current run tracking (for mid-run saves)
+var current_run_shards: int = 0
+var current_run_level: int = 1
+var current_run_time: float = 0.0
+var current_run_kills: int = 0
+var current_run_active: bool = false
 
 # Default save data structure
 var save_data = {
@@ -12,21 +19,48 @@ var save_data = {
 	"highest_level": 0,
 	"total_kills": 0,
 	
+	# CHARACTER UNLOCK SYSTEM - NEW!
+	"unlocks": {
+		"swordmaiden_unlocked": false,
+		"swordmaiden_challenge_best": 0  # Best level reached for unlock challenge
+	},
+	
 	# Permanent upgrades
 	"upgrades": {
-		"starting_damage": 0,      # +5% damage per level
-		"starting_health": 0,      # +20 HP per level
-		"starting_speed": 0,       # +5% speed per level
-		"starting_luck": 0,        # +1 luck per level
-		"xp_boost": 0,             # +10% XP per level
-		"currency_boost": 0,       # +20% shards per level
-		"starting_weapon_slot": 0, # +1 weapon slot (max 1)
-		"reroll_count": 0,         # +1 reroll per level (max 3)
+		"starting_damage": 0,
+		"starting_health": 0,
+		"starting_speed": 0,
+		"starting_luck": 0,
+		"xp_boost": 0,
+		"currency_boost": 0,
+		"starting_weapon_slot": 0,
+		"reroll_count": 0,
 	}
 }
 
 func _ready():
 	load_game()
+	# ENSURE unlocks data exists (for old save files)
+	ensure_unlocks_data()
+	# Start auto-save timer
+	start_autosave_timer()
+
+func ensure_unlocks_data():
+	# Make sure unlocks dictionary exists
+	if not save_data.has("unlocks"):
+		save_data.unlocks = {
+			"swordmaiden_unlocked": false,
+			"swordmaiden_challenge_best": 0
+		}
+		save_game()
+		print("✅ Added unlocks data to save file")
+	else:
+		# Make sure all unlock keys exist
+		if not save_data.unlocks.has("swordmaiden_unlocked"):
+			save_data.unlocks.swordmaiden_unlocked = false
+		if not save_data.unlocks.has("swordmaiden_challenge_best"):
+			save_data.unlocks.swordmaiden_challenge_best = 0
+		save_game()
 
 func save_game():
 	var file = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
@@ -38,6 +72,84 @@ func save_game():
 		return true
 	else:
 		print("❌ Failed to save game!")
+		return false
+
+# ==============================================================
+# AUTO-SAVE SYSTEM - Saves during gameplay
+# ==============================================================
+
+func start_autosave_timer():
+	# Auto-save every 30 seconds during gameplay
+	var timer = Timer.new()
+	timer.name = "AutoSaveTimer"
+	timer.wait_time = 30.0
+	timer.autostart = false
+	timer.timeout.connect(_on_autosave_timeout)
+	add_child(timer)
+	print("⏱️ Auto-save system ready (saves every 30 seconds)")
+
+func _on_autosave_timeout():
+	if current_run_active:
+		print("💾 Auto-saving current run progress...")
+		# Save current progress (in case game closes)
+		save_game()
+		print("✅ Auto-save complete! Shards this run: %d" % current_run_shards)
+
+# Start tracking a new run
+func start_new_run():
+	current_run_shards = 0
+	current_run_level = 1
+	current_run_time = 0.0
+	current_run_kills = 0
+	current_run_active = true
+	
+	# Start auto-save timer
+	var timer = get_node_or_null("AutoSaveTimer")
+	if timer:
+		timer.start()
+	
+	print("🎮 New run started - auto-save enabled")
+
+# Update current run stats (call this during gameplay)
+func update_run_stats(shards: int = -1, level: int = -1, time: float = -1, kills: int = -1):
+	if not current_run_active:
+		return
+	
+	if shards >= 0:
+		current_run_shards = shards
+	if level >= 0:
+		current_run_level = level
+	if time >= 0:
+		current_run_time = time
+	if kills >= 0:
+		current_run_kills = kills
+
+# End current run and save everything
+func end_run():
+	if not current_run_active:
+		return
+	
+	current_run_active = false
+	
+	# Stop auto-save timer
+	var timer = get_node_or_null("AutoSaveTimer")
+	if timer:
+		timer.stop()
+	
+	# Add any collected shards to bank
+	if current_run_shards > 0:
+		add_shards(current_run_shards)
+		print("💰 Run ended: %d shards added to bank" % current_run_shards)
+	
+	print("🏁 Run ended - final save complete")
+
+# Manual save button (for pause menu)
+func manual_save():
+	if save_game():
+		print("💾 Manual save successful!")
+		return true
+	else:
+		print("❌ Manual save failed!")
 		return false
 
 func load_game():
@@ -62,6 +174,10 @@ func load_game():
 						# Merge upgrade data
 						for upgrade_key in loaded_data.upgrades:
 							save_data.upgrades[upgrade_key] = loaded_data.upgrades[upgrade_key]
+					elif key == "unlocks":
+						# Merge unlock data
+						for unlock_key in loaded_data.unlocks:
+							save_data.unlocks[unlock_key] = loaded_data.unlocks[unlock_key]
 					else:
 						save_data[key] = loaded_data[key]
 			
@@ -106,6 +222,68 @@ func purchase_upgrade(upgrade_name: String, cost: int) -> bool:
 			return true
 	return false
 
+# ==============================================================
+# CHARACTER UNLOCK SYSTEM - NEW!
+# ==============================================================
+
+# Check if swordmaiden is unlocked
+func is_swordmaiden_unlocked() -> bool:
+	if not save_data.has("unlocks"):
+		return false
+	return save_data.unlocks.get("swordmaiden_unlocked", false)
+
+# Check if challenge is complete (level 30 reached)
+func is_swordmaiden_challenge_complete() -> bool:
+	if not save_data.has("unlocks"):
+		return false
+	return save_data.unlocks.get("swordmaiden_challenge_best", 0) >= 30
+
+# Get challenge progress
+func get_swordmaiden_challenge_progress() -> int:
+	if not save_data.has("unlocks"):
+		return 0
+	return save_data.unlocks.get("swordmaiden_challenge_best", 0)
+
+# Try to purchase swordmaiden unlock
+func try_unlock_swordmaiden() -> bool:
+	# Must complete challenge first
+	if not is_swordmaiden_challenge_complete():
+		print("❌ Challenge not complete! Reach level 30 first.")
+		return false
+	
+	# Must have enough shards
+	if save_data.total_shards < 5000:
+		print("❌ Not enough shards! Need 5000, have %d" % save_data.total_shards)
+		return false
+	
+	# Purchase!
+	if spend_shards(5000):
+		save_data.unlocks.swordmaiden_unlocked = true
+		save_game()
+		print("🗡️ SWORDMAIDEN UNLOCKED!")
+		return true
+	
+	return false
+
+# Update challenge progress
+func update_swordmaiden_challenge(level: int):
+	if not save_data.has("unlocks"):
+		save_data.unlocks = {
+			"swordmaiden_unlocked": false,
+			"swordmaiden_challenge_best": 0
+		}
+	
+	if level > save_data.unlocks.swordmaiden_challenge_best:
+		save_data.unlocks.swordmaiden_challenge_best = level
+		save_game()
+		
+		if level >= 30 and not save_data.unlocks.swordmaiden_unlocked:
+			print("🏆 CHALLENGE COMPLETE! Swordmaiden can now be purchased for 5000 shards!")
+
+# ==============================================================
+# ORIGINAL FUNCTIONS
+# ==============================================================
+
 # Track run stats
 func record_run_stats(stats: Dictionary):
 	save_data.runs_completed += 1
@@ -118,6 +296,9 @@ func record_run_stats(stats: Dictionary):
 		save_data.highest_level = stats.get("level", 0)
 	
 	save_data.total_kills += stats.get("kills", 0)
+	
+	# Update character unlock challenge
+	update_swordmaiden_challenge(stats.get("level", 0))
 	
 	save_game()
 
@@ -143,6 +324,10 @@ func reset_all_progress():
 		"best_time": 0,
 		"highest_level": 0,
 		"total_kills": 0,
+		"unlocks": {
+			"swordmaiden_unlocked": false,
+			"swordmaiden_challenge_best": 0
+		},
 		"upgrades": {
 			"starting_damage": 0,
 			"starting_health": 0,
@@ -156,3 +341,20 @@ func reset_all_progress():
 	}
 	save_game()
 	print("⚠️ All progress reset!")
+
+# TESTING: Unlock swordmaiden for free (for development)
+func unlock_swordmaiden_dev():
+	if not save_data.has("unlocks"):
+		save_data.unlocks = {}
+	save_data.unlocks.swordmaiden_unlocked = true
+	save_data.unlocks.swordmaiden_challenge_best = 30
+	save_game()
+	print("🔓 DEV: Swordmaiden unlocked for testing!")
+
+# TESTING: Set challenge progress for testing
+func set_challenge_progress_dev(level: int):
+	if not save_data.has("unlocks"):
+		save_data.unlocks = {}
+	save_data.unlocks.swordmaiden_challenge_best = level
+	save_game()
+	print("🔧 DEV: Challenge progress set to %d" % level)

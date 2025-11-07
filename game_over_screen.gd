@@ -24,13 +24,17 @@ func set_run_stats(stats: Dictionary):
 	# PHASE 4: Save shards collected and run stats
 	if has_node("/root/SaveManager"):
 		var save_manager = get_node("/root/SaveManager")
+		
+		# End the current run (this saves shards and stops auto-save)
+		save_manager.end_run()
+		
 		var shards = stats.get("shards_collected", 0)
 		if shards > 0:
-			save_manager.add_shards(shards)
 			print("💾 Saved %d shards to bank!" % shards)
 		
 		# Record run stats for career tracking
 		save_manager.record_run_stats(stats)
+		print("💾 Full run stats saved!")
 	
 	if is_inside_tree():
 		display_stats()

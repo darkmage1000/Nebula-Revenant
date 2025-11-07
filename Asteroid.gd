@@ -3,8 +3,8 @@ extends Area2D
 
 signal destroyed
 
-var health: float = 30.0
-var max_health: float = 30.0
+var health: float = 15.0
+var max_health: float = 15.0
 
 # Drop chances
 const DROP_SHARD_CHANCE = 1.0  # 100% drop shards
@@ -20,7 +20,7 @@ var rotation_speed: float = 0.0
 func _ready():
 	add_to_group("asteroid")
 	collision_layer = 8  # Layer 4 for asteroids
-	collision_mask = 0  # Don't collide with anything physically
+	collision_mask = 1  # Detect bullets on layer 1
 	
 	# Try to load shard scene
 	if ResourceLoader.exists("res://NebulaShard.tscn"):
@@ -38,7 +38,7 @@ func _ready():
 	rotation_speed = randf_range(-0.5, 0.5)
 	
 	# Random scale for variety
-	var random_scale = randf_range(0.8, 1.3)
+	var random_scale = randf_range(0.6, 0.9)
 	scale = Vector2(random_scale, random_scale)
 	health *= random_scale  # Bigger asteroids = more HP
 	max_health = health
@@ -123,19 +123,24 @@ func spawn_healthpack(pos: Vector2):
 		var healthpack = Area2D.new()
 		healthpack.global_position = pos
 		healthpack.add_to_group("healthpack")
+		healthpack.collision_layer = 8  # FIX: Set to pickup layer
+		healthpack.collision_mask = 4   # Detect player on layer 3
 		
-		# Visual
+		# Visual - Green plus sign
 		var sprite = Sprite2D.new()
-		var circle = create_circle_texture(20, Color(0, 1, 0, 1))
-		sprite.texture = circle
+		var plus_texture = create_plus_texture(25, Color(0, 1, 0, 1))
+		sprite.texture = plus_texture
 		healthpack.add_child(sprite)
 		
 		# Collision
 		var collision = CollisionShape2D.new()
 		var shape = CircleShape2D.new()
-		shape.radius = 20
+		shape.radius = 25
 		collision.shape = shape
 		healthpack.add_child(collision)
+		
+		# Add floating animation
+		add_floating_animation(healthpack)
 		
 		get_parent().add_child(healthpack)
 	else:
@@ -156,30 +161,45 @@ func spawn_powerup(pos: Vector2):
 		powerup.global_position = pos
 		powerup.add_to_group("powerup")
 		powerup.set_meta("powerup_type", powerup_type)
+		powerup.collision_layer = 8  # FIX: Set to pickup layer
+		powerup.collision_mask = 4   # Detect player on layer 3
 		
-		# Visual based on type
+		# Visual based on type - LARGER and more distinctive
 		var color = Color(1, 1, 0, 1)  # Default yellow
+		var size = 30
 		match powerup_type:
 			"invincible":
-				color = Color(1, 1, 0, 1)  # Yellow
+				color = Color(1, 1, 0, 1)  # Bright yellow star
 			"magnet":
-				color = Color(0, 1, 1, 1)  # Cyan
+				color = Color(0, 1, 1, 1)  # Bright cyan
 			"attack_speed":
-				color = Color(1, 0, 1, 1)  # Magenta
+				color = Color(1, 0, 1, 1)  # Bright magenta
 			"nuke":
-				color = Color(1, 0.5, 0, 1)  # Orange
+				color = Color(1, 0.5, 0, 1)  # Bright orange
 		
 		var sprite = Sprite2D.new()
-		var circle = create_circle_texture(25, color)
-		sprite.texture = circle
+		var star_texture = create_star_texture(size, color)
+		sprite.texture = star_texture
 		powerup.add_child(sprite)
+		
+		# Add glow effect
+		var glow = Sprite2D.new()
+		glow.texture = create_circle_texture(size + 10, Color(color.r, color.g, color.b, 0.3))
+		glow.z_index = -1
+		powerup.add_child(glow)
 		
 		# Collision
 		var collision = CollisionShape2D.new()
 		var shape = CircleShape2D.new()
-		shape.radius = 25
+		shape.radius = size
 		collision.shape = shape
 		powerup.add_child(collision)
+		
+		# Add floating animation
+		add_floating_animation(powerup)
+		
+		# Add pulsing animation to glow
+		add_pulse_animation(glow)
 		
 		get_parent().add_child(powerup)
 	else:
@@ -241,3 +261,87 @@ func create_asteroid_texture() -> ImageTexture:
 				img.set_pixel(x, y, color)
 	
 	return ImageTexture.create_from_image(img)
+
+func create_plus_texture(radius: float, color: Color) -> ImageTexture:
+	# Create a plus/cross shape for health packs
+	var size = int(radius * 2.5)
+	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
+	
+	var center = Vector2(size / 2, size / 2)
+	var thickness = radius * 0.4
+	
+	for x in range(size):
+		for y in range(size):
+			var pos = Vector2(x, y)
+			# Vertical bar
+			if abs(pos.x - center.x) <= thickness:
+				img.set_pixel(x, y, color)
+			# Horizontal bar
+			elif abs(pos.y - center.y) <= thickness:
+				img.set_pixel(x, y, color)
+	
+	return ImageTexture.create_from_image(img)
+
+func create_star_texture(radius: float, color: Color) -> ImageTexture:
+	# Create a star shape for power-ups
+	var size = int(radius * 3)
+	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
+	
+	var center = Vector2(size / 2, size / 2)
+	
+	for x in range(size):
+		for y in range(size):
+			var pos = Vector2(x, y) - center
+			var angle = pos.angle()
+			var dist = pos.length()
+			
+			# Create 5-pointed star
+			var star_radius = radius
+			for i in range(5):
+				var point_angle = (i * TAU / 5.0) - PI/2
+				var angle_diff = abs(angle - point_angle)
+				if angle_diff > PI:
+					angle_diff = TAU - angle_diff
+				
+				if angle_diff < 0.6 and dist <= star_radius * 1.3:
+					img.set_pixel(x, y, color)
+					break
+			
+			# Fill center
+			if dist <= radius * 0.5:
+				img.set_pixel(x, y, color)
+	
+	return ImageTexture.create_from_image(img)
+
+func add_floating_animation(node: Node2D):
+	# Make pickups float up and down
+	var start_y = node.global_position.y
+	var float_amount = 15.0
+	var float_speed = 2.0
+	
+	# Use a script to handle floating
+	var script_text = """
+extends Node2D
+var time = 0.0
+var start_y = 0.0
+var float_speed = 2.0
+var float_amount = 15.0
+
+func _ready():
+	start_y = global_position.y
+
+func _process(delta):
+	time += delta * float_speed
+	global_position.y = start_y + sin(time) * float_amount
+"""
+	var script = GDScript.new()
+	script.source_code = script_text
+	script.reload()
+	node.set_script(script)
+
+func add_pulse_animation(sprite: Sprite2D):
+	# Make glow pulse
+	var tween = create_tween()
+	tween.set_loops()
+	tween.tween_property(sprite, "scale", Vector2(1.3, 1.3), 0.8)
+	tween.tween_property(sprite, "scale", Vector2(1.0, 1.0), 0.8)

@@ -1,4 +1,4 @@
-# main_menu.gd - PHASE 4: Main menu with upgrade shop
+# main_menu.gd - UPDATED: Better unlock info!
 extends Control
 
 @onready var start_button = $VBoxContainer/StartButton
@@ -42,7 +42,8 @@ func update_currency_display():
 		currency_label.text = "💎 Nebula Shards: %d" % shards
 
 func _on_start_pressed():
-	get_tree().change_scene_to_file("res://main_game.tscn")
+	# NEW: Go to character select instead of directly to game
+	get_tree().change_scene_to_file("res://CharacterSelect.tscn")
 
 func _on_upgrades_pressed():
 	if upgrade_panel:
@@ -196,6 +197,46 @@ func populate_stats():
 	var seconds = int(data.best_time) % 60
 	add_stat_label(stats_list, "Best Time: %d:%02d" % [minutes, seconds], 18)
 	add_stat_label(stats_list, "Highest Level: %d" % data.highest_level, 18)
+	
+	# Character unlock status - IMPROVED!
+	add_stat_label(stats_list, "", 12)  # Spacer
+	add_stat_label(stats_list, "=== Unlockable Characters ===", 24, Color(1, 0.4, 0.8))
+	add_stat_label(stats_list, "", 8)  # Small spacer
+	
+	if data.has("unlocks"):
+		var unlocks = data.unlocks
+		
+		# Swordmaiden status with detailed info
+		if unlocks.swordmaiden_unlocked:
+			add_stat_label(stats_list, "⚔️ SWORDMAIDEN", 22, Color(1, 0.4, 0.8))
+			add_stat_label(stats_list, "✅ UNLOCKED!", 18, Color(0.4, 1, 0.4))
+			add_stat_label(stats_list, "Melee warrior with 150 HP", 16, Color(0.8, 0.8, 0.8))
+		else:
+			var progress = unlocks.swordmaiden_challenge_best
+			add_stat_label(stats_list, "⚔️ SWORDMAIDEN", 22, Color(1, 0.4, 0.8))
+			
+			if progress >= 30:
+				# Challenge complete, ready to buy
+				add_stat_label(stats_list, "🏆 Challenge Complete!", 18, Color(0.4, 1, 0.4))
+				add_stat_label(stats_list, "Ready to purchase for 5000 Shards", 16, Color(1, 0.9, 0.3))
+				add_stat_label(stats_list, "Go to Character Select to unlock!", 16, Color(1, 0.9, 0.3))
+			else:
+				# Still working on challenge
+				add_stat_label(stats_list, "🔒 LOCKED", 18, Color(0.8, 0.5, 0.5))
+				add_stat_label(stats_list, "Challenge: Reach Level 30", 16, Color(0.8, 0.8, 0.8))
+				add_stat_label(stats_list, "Progress: %d/30" % progress, 16, Color(0.9, 0.9, 0.9))
+				add_stat_label(stats_list, "Then purchase for 5000 Shards", 14, Color(0.7, 0.7, 0.7))
+		
+		add_stat_label(stats_list, "", 8)  # Small spacer
+		add_stat_label(stats_list, "───────────────", 16, Color(0.5, 0.5, 0.5))
+		add_stat_label(stats_list, "", 8)
+		
+		# Coming soon section
+		add_stat_label(stats_list, "🔮 COMING SOON", 20, Color(0.6, 0.6, 0.8))
+		add_stat_label(stats_list, "More characters will be added!", 14, Color(0.7, 0.7, 0.7))
+	else:
+		# Fallback if unlocks data doesn't exist
+		add_stat_label(stats_list, "⚔️ Swordmaiden: Coming Soon!", 18, Color(0.8, 0.5, 0.5))
 
 func add_stat_label(parent: Node, text: String, font_size: int = 18, color: Color = Color.WHITE):
 	var label = Label.new()

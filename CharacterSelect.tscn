@@ -1,0 +1,205 @@
+[gd_scene load_steps=4 format=3 uid="uid://character_select_scene"]
+
+[ext_resource type="Script" path="res://character_select.gd" id="1"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ranger"]
+bg_color = Color(0.1, 0.1, 0.2, 0.9)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.4, 0.8, 1, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_swordmaiden"]
+bg_color = Color(0.15, 0.05, 0.15, 0.9)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(1, 0.4, 0.8, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[node name="CharacterSelect" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1")
+
+[node name="ColorRect" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.05, 0.05, 0.15, 1)
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 100
+theme_override_constants/margin_top = 50
+theme_override_constants/margin_right = 100
+theme_override_constants/margin_bottom = 50
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 30
+
+[node name="TitleLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.8, 1, 1)
+theme_override_font_sizes/font_size = 48
+text = "SELECT YOUR CHARACTER"
+horizontal_alignment = 1
+
+[node name="InfoLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
+theme_override_font_sizes/font_size = 24
+text = "Nebula Shards: 0"
+horizontal_alignment = 1
+
+[node name="CharactersContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 50
+alignment = 1
+
+[node name="RangerPanel" type="PanelContainer" parent="MarginContainer/VBoxContainer/CharactersContainer"]
+custom_minimum_size = Vector2(400, 500)
+layout_mode = 2
+
+[node name="Panel" type="Panel" parent="MarginContainer/VBoxContainer/CharactersContainer/RangerPanel"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_ranger")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer/CharactersContainer/RangerPanel"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="NameLabel" type="Label" parent="MarginContainer/VBoxContainer/CharactersContainer/RangerPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.8, 1, 1)
+theme_override_font_sizes/font_size = 32
+text = "🎯 RANGER"
+horizontal_alignment = 1
+
+[node name="DescLabel" type="Label" parent="MarginContainer/VBoxContainer/CharactersContainer/RangerPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
+theme_override_font_sizes/font_size = 18
+text = "Master of ranged combat"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="MarginContainer/VBoxContainer/CharactersContainer/RangerPanel/VBoxContainer"]
+layout_mode = 2
+
+[node name="StatsLabel" type="Label" parent="MarginContainer/VBoxContainer/CharactersContainer/RangerPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.9, 0.9, 1)
+theme_override_font_sizes/font_size = 16
+text = "❤️  Health: 100
+⚡ Speed: 350
+🛡️  Armor: 0
+💚 Regen: 0.2/s
+
+Starting Weapon:
+🔫 Pistol (12 dmg)"
+horizontal_alignment = 1
+
+[node name="SelectButton" type="Button" parent="MarginContainer/VBoxContainer/CharactersContainer/RangerPanel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 60)
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_font_sizes/font_size = 24
+text = "SELECT"
+
+[node name="SwordmaidenPanel" type="PanelContainer" parent="MarginContainer/VBoxContainer/CharactersContainer"]
+custom_minimum_size = Vector2(400, 500)
+layout_mode = 2
+
+[node name="Panel" type="Panel" parent="MarginContainer/VBoxContainer/CharactersContainer/SwordmaidenPanel"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_swordmaiden")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer/CharactersContainer/SwordmaidenPanel"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="NameLabel" type="Label" parent="MarginContainer/VBoxContainer/CharactersContainer/SwordmaidenPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.4, 0.8, 1)
+theme_override_font_sizes/font_size = 32
+text = "⚔️ SWORDMAIDEN"
+horizontal_alignment = 1
+
+[node name="DescLabel" type="Label" parent="MarginContainer/VBoxContainer/CharactersContainer/SwordmaidenPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
+theme_override_font_sizes/font_size = 18
+text = "High-risk melee warrior"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="MarginContainer/VBoxContainer/CharactersContainer/SwordmaidenPanel/VBoxContainer"]
+layout_mode = 2
+
+[node name="StatsLabel" type="Label" parent="MarginContainer/VBoxContainer/CharactersContainer/SwordmaidenPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.9, 0.9, 1)
+theme_override_font_sizes/font_size = 16
+text = "❤️  Health: 150 (+50!)
+⚡ Speed: 350
+🛡️  Armor: 5 (+5!)
+💚 Regen: 0.5/s (+0.3!)
+
+Starting Weapon:
+🗡️ Energy Sword (25 dmg)"
+horizontal_alignment = 1
+
+[node name="SelectButton" type="Button" parent="MarginContainer/VBoxContainer/CharactersContainer/SwordmaidenPanel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 60)
+layout_mode = 2
+visible = false
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_font_sizes/font_size = 24
+text = "SELECT"
+
+[node name="UnlockButton" type="Button" parent="MarginContainer/VBoxContainer/CharactersContainer/SwordmaidenPanel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 60)
+layout_mode = 2
+visible = false
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_colors/font_disabled_color = Color(0.5, 0.5, 0.5, 1)
+theme_override_font_sizes/font_size = 24
+text = "Unlock (5000 Shards)"
+
+[node name="LockedLabel" type="Label" parent="MarginContainer/VBoxContainer/CharactersContainer/SwordmaidenPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8, 0.5, 0.5, 1)
+theme_override_font_sizes/font_size = 20
+text = "🔒 Locked
+Challenge: Reach Level 30
+Progress: 0/30"
+horizontal_alignment = 1
+
+[node name="BackButton" type="Button" parent="MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 60)
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_font_sizes/font_size = 24
+text = "← BACK TO MENU"

@@ -1,4 +1,4 @@
-# player.gd – FIXED: ALL UPGRADES WORK PROPERLY
+# player.gd – NERFED SPEED + CHARACTER SYSTEM
 extends CharacterBody2D
 
 signal health_depleted
@@ -12,12 +12,12 @@ var player_stats = {
 	"xp_to_next_level": 30,
 	"max_health": 100.0,
 	"current_health": 100.0,
-	"health_regen": 0.2,  # REDUCED from 0.5 - was too strong
+	"health_regen": 0.2,
 	"shield": 50.0,
 	"shield_recharge_rate": 5.0,
 	"lifesteal": 0.0,
 	"armor": 0,
-	"speed": 600.0,
+	"speed": 350.0,  # NERFED from 600 - much better for huge map!
 	"attack_speed_mult": 1.0,
 	"damage_mult": 1.0,
 	"aoe_mult": 1.0,
@@ -27,7 +27,8 @@ var player_stats = {
 	"pickup_radius": 100.0,
 	"luck": 0,
 	"max_weapon_slots": 6,
-	"current_weapons": []
+	"current_weapons": [],
+	"character_type": "ranger"  # NEW: "ranger" or "swordmaiden"
 }
 
 # ==============================================================
@@ -74,6 +75,13 @@ var weapon_data = {
 		"pierce": 0, "knockback": 0, "spread": 0.0,
 		"poison": false, "burn": false, "aoe": 150, "distance": 0,
 		"level": 0
+	},
+	"sword": {
+		"name": "Energy Sword", "scene": null,  # Will create if doesn't exist
+		"damage": 25, "attack_speed": 2.0, "projectiles": 0,
+		"pierce": 0, "knockback": 50, "spread": 0.0,
+		"poison": false, "burn": false, "aoe": 80, "distance": 100,
+		"level": 0, "melee": true
 	}
 }
 
@@ -97,6 +105,10 @@ var weapon_upgrade_paths = {
 	"aura": [
 		{"damage": 10, "aoe": 180},
 		{"damage": 12, "aoe": 210}
+	],
+	"sword": [
+		{"damage": 35, "aoe": 100, "knockback": 100},
+		{"damage": 50, "aoe": 120, "attack_speed": 2.5}
 	]
 }
 
@@ -105,6 +117,7 @@ var weapon_upgrade_paths = {
 # ==============================================================
 @onready var hurt_box = $HurtBox
 @onready var pickup_radius = $PickupRadius
+@onready var sprite = $Sprite2D
 
 # ==============================================================
 # 6. _READY
@@ -112,6 +125,7 @@ var weapon_upgrade_paths = {
 func _ready():
 	player_stats.current_health = player_stats.max_health
 	apply_starting_bonuses()
+	apply_character_bonuses()
 	run_stats.start_time = Time.get_ticks_msec() / 1000.0
 	
 	if pickup_radius:
@@ -119,7 +133,21 @@ func _ready():
 		if collision_shape and collision_shape.shape:
 			collision_shape.shape.radius = player_stats.pickup_radius
 	
-	add_weapon("pistol")  # Starting weapon
+	# Set starting weapon based on character
+	if player_stats.character_type == "ranger":
+		add_weapon("pistol")
+	elif player_stats.character_type == "swordmaiden":
+		add_weapon("sword")
+
+func apply_character_bonuses():
+	# Swordmaiden: melee specialist with tankier stats
+	if player_stats.character_type == "swordmaiden":
+		player_stats.max_health += 50  # 150 HP total
+		player_stats.current_health = player_stats.max_health
+		player_stats.armor += 5  # More armor
+		player_stats.health_regen += 0.3  # Better regen
+		player_stats.pickup_radius += 50  # Larger pickup radius
+		print("🗡️ Swordmaiden bonus: +50 HP, +5 Armor, +0.3 Regen")
 
 func apply_starting_bonuses():
 	if not has_node("/root/SaveManager"):
@@ -155,11 +183,9 @@ func apply_starting_bonuses():
 func _physics_process(delta):
 	var direction = Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
 	velocity = direction * player_stats.speed
-	# FIXED: move_and_slide() doesn't push enemies anymore if collision layers are set correctly
-	# Player should be on layer 1, enemies on layer 2, player collision_mask should NOT include layer 2
 	move_and_slide()
 
-	# MAP BOUNDARIES - Keep player within 70,000 x 70,000 map
+	# MAP BOUNDARIES
 	var main_game = get_parent()
 	if main_game and main_game.has_method("get"):
 		var map_width = main_game.get("MAP_WIDTH")
@@ -182,18 +208,19 @@ func _physics_process(delta):
 		if player_stats.current_health <= 0:
 			health_depleted.emit()
 
-	# FIXED: XP vials now get pulled to player instead of instant pickup
 	for area in pickup_radius.get_overlapping_areas():
 		if area.is_in_group("xp_vial") and area.has_method("start_pull"):
 			area.start_pull(self)
-		# Health packs
 		elif area.is_in_group("healthpack"):
 			pickup_healthpack()
 			area.queue_free()
-		# Powerups
 		elif area.is_in_group("powerup"):
 			pickup_powerup(area)
 			area.queue_free()
+		elif area.is_in_group("currency"):
+			# Collect shards directly (they handle their own collection)
+			if area.has_method("collect"):
+				area.collect(self)
 
 # ==============================================================
 # 8. XP + LEVEL UP
@@ -207,9 +234,6 @@ func pickup_xp(amount: int) -> void:
 	while player_stats.current_xp >= player_stats.xp_to_next_level:
 		player_stats.current_xp -= player_stats.xp_to_next_level
 		player_stats.level += 1
-		# REBALANCED for level 80 at 30 minutes!
-		# Formula: 50 + pow(level, 1.5) * 12 for smoother progression
-		# This allows reaching level 80 by 30 mins with good play
 		player_stats.xp_to_next_level = int(50 + pow(player_stats.level, 1.5) * 12)
 		
 		if get_parent().has_method("show_level_up_options"):
@@ -240,6 +264,14 @@ func add_weapon(weapon_key: String) -> void:
 	if data.level == 0:
 		data.level = 1
 	
+	# Handle sword weapon (melee)
+	if weapon_key == "sword":
+		# Create inline sword weapon if scene doesn't exist
+		if data.scene == null or not ResourceLoader.exists("res://Sword.tscn"):
+			create_sword_weapon(data)
+			player_stats.current_weapons.append(weapon_key)
+			return
+	
 	var new_weapon = data.scene.instantiate()
 	
 	if new_weapon.has_method("set_stats"):
@@ -253,6 +285,94 @@ func add_weapon(weapon_key: String) -> void:
 	player_stats.current_weapons.append(weapon_key)
 	
 	print("Added weapon: ", weapon_key, " | Total weapons: ", player_stats.current_weapons.size())
+
+func create_sword_weapon(data: Dictionary):
+	# Create simple melee sword system
+	var sword_timer = Timer.new()
+	sword_timer.name = "SwordTimer"
+	sword_timer.wait_time = 1.0 / data.attack_speed
+	sword_timer.timeout.connect(_on_sword_attack)
+	sword_timer.autostart = true
+	add_child(sword_timer)
+	print("🗡️ Created Energy Sword weapon!")
+
+func _on_sword_attack():
+	# Get sword data
+	if not weapon_data.has("sword"):
+		return
+	
+	var data = weapon_data["sword"]
+	var sword_range = data.distance
+	var sword_damage = data.damage * player_stats.damage_mult
+	var sword_aoe = data.aoe
+	
+	# Find enemies in melee range
+	var enemies = get_tree().get_nodes_in_group("mob")
+	var hit_enemies = []
+	
+	for enemy in enemies:
+		if not is_instance_valid(enemy):
+			continue
+			
+		var dist = global_position.distance_to(enemy.global_position)
+		if dist <= sword_range:
+			hit_enemies.append(enemy)
+	
+	# Hit closest enemies (up to 3)
+	hit_enemies.sort_custom(func(a, b): return global_position.distance_to(a.global_position) < global_position.distance_to(b.global_position))
+	
+	var hits = 0
+	for enemy in hit_enemies:
+		if hits >= 3:  # Max 3 enemies per swing
+			break
+			
+		if enemy.has_method("take_damage"):
+			var crit = randf() < player_stats.crit_chance
+			var final_dmg = sword_damage
+			if crit:
+				final_dmg *= player_stats.crit_damage
+			
+			enemy.take_damage(final_dmg, false, crit)
+			report_weapon_damage("sword", final_dmg)
+			
+			# Apply knockback
+			if enemy.has_method("apply_knockback"):
+				var knockback_dir = (enemy.global_position - global_position).normalized()
+				enemy.apply_knockback(knockback_dir * data.knockback)
+			
+			hits += 1
+	
+	if hits > 0:
+		# Visual feedback - sword slash effect (optional)
+		create_slash_effect()
+
+func create_slash_effect():
+	# Simple pink energy slash visual
+	var slash = Node2D.new()
+	slash.global_position = global_position
+	get_parent().add_child(slash)
+	
+	# Get direction to nearest enemy
+	var enemies = get_tree().get_nodes_in_group("mob")
+	var nearest = null
+	var nearest_dist = INF
+	
+	for enemy in enemies:
+		if is_instance_valid(enemy):
+			var dist = global_position.distance_to(enemy.global_position)
+			if dist < nearest_dist:
+				nearest_dist = dist
+				nearest = enemy
+	
+	if nearest:
+		slash.rotation = global_position.angle_to_point(nearest.global_position) + PI/2
+	
+	slash.modulate = Color(1, 0.4, 0.8, 0.8)  # Pink energy color
+	
+	# Fade out
+	var tween = create_tween()
+	tween.tween_property(slash, "modulate:a", 0.0, 0.3)
+	tween.tween_callback(slash.queue_free)
 
 # ==============================================================
 # 10. DAMAGE REPORTING + LIFESTEAL
@@ -323,6 +443,12 @@ func upgrade_weapon(weapon_key: String, upgrade_key: String, value) -> void:
 	else:
 		print("ERROR: Weapon '%s' doesn't have stat '%s'" % [weapon_key, upgrade_key])
 	
+	# Update sword timer if upgrading sword attack speed
+	if weapon_key == "sword" and upgrade_key == "attack_speed":
+		var sword_timer = get_node_or_null("SwordTimer")
+		if sword_timer:
+			sword_timer.wait_time = 1.0 / data.attack_speed
+	
 	_update_weapon_instance(weapon_key, data)
 
 func _update_all_weapons() -> void:
@@ -388,7 +514,20 @@ func collect_currency(amount: int):
 	
 	var final_amount = int(amount * multiplier)
 	run_stats.shards_collected += final_amount
-	print("Collected shards: +%d (Total: %d)" % [final_amount, run_stats.shards_collected])
+
+# ==============================================================
+# 14. PICKUP SIGNAL HANDLER (redundant with _physics_process but good to have)
+# ==============================================================
+func _on_pickup_radius_area_entered(area: Area2D):
+	# This provides instant pickup on first contact
+	if area.is_in_group("healthpack"):
+		pickup_healthpack()
+		area.queue_free()
+	elif area.is_in_group("powerup"):
+		pickup_powerup(area)
+		area.queue_free()
+	elif area.is_in_group("currency") and area.has_method("collect"):
+		area.collect(self)
 
 # ==============================================================
 # 15. POWERUPS FROM ASTEROIDS
@@ -403,6 +542,8 @@ func pickup_healthpack():
 func pickup_powerup(powerup: Area2D):
 	var powerup_type = powerup.get_meta("powerup_type", "unknown")
 	
+	print("✨ Picked up powerup: ", powerup_type)
+	
 	match powerup_type:
 		"invincible":
 			activate_invincibility()
@@ -413,22 +554,20 @@ func pickup_powerup(powerup: Area2D):
 		"nuke":
 			activate_nuke()
 		_:
-			print("⚠️ Unknown powerup type: %s" % powerup_type)
+			print("⚠️ Unknown powerup type: ", powerup_type)
 
 func activate_invincibility():
 	print("⭐ INVINCIBLE for 10 seconds!")
-	player_stats.armor += 1000  # Effectively invincible
+	player_stats.armor += 1000
 	await get_tree().create_timer(10.0).timeout
 	player_stats.armor = max(0, player_stats.armor - 1000)
-	print("⭐ Invincibility ended")
 
 func activate_magnet():
-	print("🧲 MAGNET activated! Collecting all XP on map...")
+	print("🧲 MAGNET activated!")
 	var vials = get_tree().get_nodes_in_group("xp_vial")
 	for vial in vials:
 		if is_instance_valid(vial) and vial.has_method("start_pull"):
 			vial.start_pull(self)
-			# Instant collection
 			if vial.has_method("get") and "value" in vial:
 				pickup_xp(vial.value)
 				vial.queue_free()
@@ -438,18 +577,42 @@ func activate_triple_attack_speed():
 	var original_speed = player_stats.attack_speed_mult
 	player_stats.attack_speed_mult *= 3.0
 	_update_all_weapons()
+	
+	# Update sword timer too
+	if has_node("SwordTimer") and weapon_data.has("sword"):
+		var sword_timer = get_node("SwordTimer")
+		sword_timer.wait_time = 1.0 / (weapon_data["sword"].attack_speed * 3.0)
+	
 	await get_tree().create_timer(10.0).timeout
 	player_stats.attack_speed_mult = original_speed
 	_update_all_weapons()
-	print("⚡ Triple attack speed ended")
+	
+	# Reset sword timer
+	if has_node("SwordTimer") and weapon_data.has("sword"):
+		var sword_timer = get_node("SwordTimer")
+		sword_timer.wait_time = 1.0 / weapon_data["sword"].attack_speed
 
 func activate_nuke():
-	print("💣 NUKE! Wiping all non-boss enemies from screen!")
+	print("💣 NUKE!")
 	var enemies = get_tree().get_nodes_in_group("mob")
 	var killed = 0
 	for enemy in enemies:
 		if is_instance_valid(enemy) and not enemy.is_in_group("boss"):
 			if enemy.has_method("take_damage"):
-				enemy.take_damage(99999)  # Instant kill
+				enemy.take_damage(99999)
 				killed += 1
 	print("💣 Nuke killed %d enemies!" % killed)
+
+# ==============================================================
+# 16. CHARACTER SELECTION
+# ==============================================================
+func set_character(char_type: String):
+	player_stats.character_type = char_type
+	
+	# Update sprite if it exists
+	if sprite and ResourceLoader.exists("res://female_hero.png") and char_type == "swordmaiden":
+		sprite.texture = load("res://female_hero.png")
+		sprite.scale = Vector2(1.5, 1.5)
+	elif sprite and char_type == "ranger":
+		# Keep default player sprite
+		pass

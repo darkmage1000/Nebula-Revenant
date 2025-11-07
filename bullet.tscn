@@ -7,7 +7,7 @@
 
 [node name="Bullet" type="Area2D"]
 collision_layer = 8
-collision_mask = 2
+collision_mask = 10
 script = ExtResource("1_v7oki")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
@@ -19,4 +19,5 @@ one_way_collision_margin = 0.0
 position = Vector2(-32, 2)
 texture = ExtResource("2_v8qja")
 
+[connection signal="area_entered" from="." to="." method="_on_area_entered"]
 [connection signal="body_entered" from="." to="." method="_on_body_entered"]
