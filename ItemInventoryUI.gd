@@ -2,6 +2,7 @@
 extends Control
 
 var main_game: Node2D = null
+var last_item_count: int = 0  # Track when to update
 
 @onready var items_container: VBoxContainer = null
 
@@ -51,12 +52,19 @@ func _ready():
 	var separator = HSeparator.new()
 	items_container.add_child(separator)
 
+	# Initial display
+	update_items()
+
 func _process(_delta):
 	if not is_instance_valid(main_game):
 		return
 
-	# Update items display
-	update_items()
+	# Only update when item count changes (not every frame!)
+	if "items_collected" in main_game:
+		var current_count = main_game.items_collected.size()
+		if current_count != last_item_count:
+			last_item_count = current_count
+			update_items()
 
 func update_items():
 	if not main_game or not "items_collected" in main_game:
