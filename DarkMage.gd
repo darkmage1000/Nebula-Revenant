@@ -66,7 +66,7 @@ func shoot_at_player():
 	projectile.global_position = global_position
 
 	# Calculate direction to player with slight lead prediction
-	var player_velocity = player.velocity if player.has("velocity") else Vector2.ZERO
+	var player_velocity = player.velocity if "velocity" in player else Vector2.ZERO
 	var time_to_hit = global_position.distance_to(player.global_position) / projectile.speed
 	var predicted_pos = player.global_position + (player_velocity * time_to_hit * 0.3)
 
@@ -75,7 +75,7 @@ func shoot_at_player():
 
 	# Scale damage with difficulty
 	var main_game = get_tree().root.get_node_or_null("MainGame")
-	if main_game and main_game.has("difficulty_mult"):
+	if main_game and "difficulty_mult" in main_game:
 		projectile.damage = 8.0 * main_game.difficulty_mult
 
 	# Add to scene
