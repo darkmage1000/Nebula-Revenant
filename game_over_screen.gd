@@ -12,10 +12,15 @@ var run_stats: Dictionary = {}
 func _ready():
 	# Make sure it pauses game
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	
+
 	if exit_button:
+		# Ensure button can process input while game is paused
+		exit_button.process_mode = Node.PROCESS_MODE_ALWAYS
 		exit_button.pressed.connect(_on_exit_pressed)
-	
+		print("✅ Game Over: Exit button connected")
+	else:
+		print("❌ Game Over: Exit button not found!")
+
 	display_stats()
 
 func set_run_stats(stats: Dictionary):
@@ -106,7 +111,14 @@ func add_spacing(height: int):
 	stats_container.add_child(spacer)
 
 func _on_exit_pressed():
-	exit_to_menu.emit()
+	print("🏠 Game Over: Exit button pressed!")
+	# Disable input processing to prevent double-clicks
+	if exit_button:
+		exit_button.disabled = true
+	# Unpause game first
 	get_tree().paused = false
-	# Go back to main menu
+	# Emit signal (for any listeners)
+	exit_to_menu.emit()
+	# Change to main menu
 	get_tree().change_scene_to_file("res://MainMenu.tscn")
+	print("✅ Game Over: Changing to main menu...")
