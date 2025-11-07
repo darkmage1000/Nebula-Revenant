@@ -13,11 +13,14 @@ func _ready():
 	horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 
-# Function called by mob.gd to set the text and color
-func set_damage_text(amount: float, color_override: Color = Color(1.0, 1.0, 0.0)):
-	# Format the damage amount to a string, rounding to 1 decimal place
-	text = str(round(amount))
-	
+# Function called to set the text and color (accepts both numbers and strings)
+func set_damage_text(amount, color_override: Color = Color(1.0, 1.0, 0.0)):
+	# Handle both float (damage) and String (powerup text)
+	if amount is float or amount is int:
+		text = str(round(amount))
+	else:
+		text = str(amount)
+
 	# Set color based on override (defaulting to yellow)
 	modulate = color_override
 	
