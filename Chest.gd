@@ -296,14 +296,15 @@ func open_chest():
 	apply_item_to_player()
 	
 	# Track in main game
-	var main_game = get_tree().root.get_node("MainGame")
-	if main_game:
-		main_game.items_collected.append({
-			"name": selected_item.name,
-			"tier": rolled_rarity,
-			"description": selected_item.description
-		})
-		print("✨ Collected [%s] %s: %s" % [rolled_rarity.to_upper(), selected_item.name, selected_item.description])
+	var main_game = get_tree().root.get_node_or_null("MainGame")
+	if main_game and "items_collected" in main_game:
+		if selected_item.has("name") and selected_item.has("description"):
+			main_game.items_collected.append({
+				"name": selected_item.name,
+				"tier": rolled_rarity,
+				"description": selected_item.description
+			})
+			print("✨ Collected [%s] %s: %s" % [rolled_rarity.to_upper(), selected_item.name, selected_item.description])
 	
 	# Visual feedback
 	play_open_animation()
@@ -332,31 +333,38 @@ func select_item_from_rarity(rarity: String):
 		print("Chest rolled %s rarity: %s" % [rarity.to_upper(), selected_item.name])
 
 func apply_item_to_player():
-	var player = get_tree().root.get_node("MainGame/Player")
+	var player = get_tree().get_first_node_in_group("player")
 	if not is_instance_valid(player):
+		print("ERROR: Could not find player!")
 		return
 	
 	match selected_item.effect_type:
 		"stat":
-			player.upgrade_player_stat(selected_item.stat, selected_item.value)
+			if selected_item.has("stat") and selected_item.has("value"):
+				player.upgrade_player_stat(selected_item.stat, selected_item.value)
 		"multi":
-			for effect in selected_item.effects:
-				player.upgrade_player_stat(effect.stat, effect.value)
-			if selected_item.has("weapon_effect"):
+			if selected_item.has("effects"):
+				for effect in selected_item.effects:
+					if effect.has("stat") and effect.has("value"):
+						player.upgrade_player_stat(effect.stat, effect.value)
+			if selected_item.has("weapon_effect") and "player_stats" in player and "current_weapons" in player.player_stats:
 				# Apply to all weapons
 				for weapon_key in player.player_stats.current_weapons:
-					player.upgrade_weapon(
-						weapon_key,
-						selected_item.weapon_effect.upgrade,
-						selected_item.weapon_effect.value
-					)
+					if selected_item.weapon_effect.has("upgrade") and selected_item.weapon_effect.has("value"):
+						player.upgrade_weapon(
+							weapon_key,
+							selected_item.weapon_effect.upgrade,
+							selected_item.weapon_effect.value
+						)
 		"all_weapons":
-			for weapon_key in player.player_stats.current_weapons:
-				player.upgrade_weapon(
-					weapon_key,
-					selected_item.upgrade,
-					selected_item.value
-				)
+			if "player_stats" in player and "current_weapons" in player.player_stats:
+				for weapon_key in player.player_stats.current_weapons:
+					if selected_item.has("upgrade") and selected_item.has("value"):
+						player.upgrade_weapon(
+							weapon_key,
+							selected_item.upgrade,
+							selected_item.value
+						)
 	
 	print("\u2728 Applied item: ", selected_item.name)
 
