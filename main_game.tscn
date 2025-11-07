@@ -27,7 +27,7 @@ offset_right = 655.0
 offset_bottom = 89.0
 
 [node name="Player" parent="." instance=ExtResource("2_6bm6p")]
-position = Vector2(667, 342)
+position = Vector2(35000, 35000)
 scale = Vector2(0.642, 1)
 
 [node name="Bullet" parent="." instance=ExtResource("4_2pltu")]

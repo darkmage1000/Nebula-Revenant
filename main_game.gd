@@ -13,6 +13,7 @@ const CHEST_SCENE     = preload("res://Chest.tscn")
 const ITEM_UI_SCENE   = preload("res://ItemUI.tscn")
 const GAME_HUD_SCENE  = preload("res://GameHUD.tscn")
 const MINIMAP_SCENE   = preload("res://Minimap.tscn")
+const ITEM_INVENTORY_UI_SCENE = preload("res://ItemInventoryUI.tscn")
 const PAUSE_MENU_SCENE = preload("res://PauseMenu.tscn")
 const ENEMY_HEALTH_BAR = preload("res://EnemyHealthBar.tscn")
 const GAME_OVER_SCENE = preload("res://GameOverScreen.tscn")  # PHASE 3
@@ -96,6 +97,13 @@ func setup_hud():
 		minimap.main_game = self
 		ui_layer.add_child(minimap)
 		print("✅ Minimap created")
+
+	# Create item inventory UI
+	if ITEM_INVENTORY_UI_SCENE:
+		var item_ui = ITEM_INVENTORY_UI_SCENE.instantiate()
+		item_ui.main_game = self
+		ui_layer.add_child(item_ui)
+		print("✅ Item inventory UI created")
 
 func _input(event: InputEvent) -> void:
 	# Pause menu with ESC

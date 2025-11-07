@@ -562,35 +562,39 @@ func pickup_powerup(powerup: Area2D):
 
 func activate_invincibility():
 	print("⭐ INVINCIBLE for 10 seconds!")
+	show_powerup_text("INVINCIBLE!", Color(1, 1, 0, 1))
+	create_powerup_display("invincible", 10.0)
 	player_stats.armor += 1000
 	await get_tree().create_timer(10.0).timeout
 	player_stats.armor = max(0, player_stats.armor - 1000)
 
 func activate_magnet():
 	print("🧲 MAGNET activated!")
+	show_powerup_text("MAGNET!", Color(0, 1, 1, 1))
+	# Pull all XP vials visually to player
 	var vials = get_tree().get_nodes_in_group("xp_vial")
 	for vial in vials:
 		if is_instance_valid(vial) and vial.has_method("start_pull"):
 			vial.start_pull(self)
-			if vial.has_method("get") and "value" in vial:
-				pickup_xp(vial.value)
-				vial.queue_free()
+			# Vials will move to player and collect automatically
 
 func activate_triple_attack_speed():
 	print("⚡ TRIPLE ATTACK SPEED for 10 seconds!")
+	show_powerup_text("RAPID FIRE!", Color(1, 0, 1, 1))
+	create_powerup_display("attack_speed", 10.0)
 	var original_speed = player_stats.attack_speed_mult
 	player_stats.attack_speed_mult *= 3.0
 	_update_all_weapons()
-	
+
 	# Update sword timer too
 	if has_node("SwordTimer") and weapon_data.has("sword"):
 		var sword_timer = get_node("SwordTimer")
 		sword_timer.wait_time = 1.0 / (weapon_data["sword"].attack_speed * 3.0)
-	
+
 	await get_tree().create_timer(10.0).timeout
 	player_stats.attack_speed_mult = original_speed
 	_update_all_weapons()
-	
+
 	# Reset sword timer
 	if has_node("SwordTimer") and weapon_data.has("sword"):
 		var sword_timer = get_node("SwordTimer")
@@ -598,6 +602,7 @@ func activate_triple_attack_speed():
 
 func activate_nuke():
 	print("💣 NUKE!")
+	show_powerup_text("NUKE!", Color(1, 0.5, 0, 1))
 	var enemies = get_tree().get_nodes_in_group("mob")
 	var killed = 0
 	for enemy in enemies:
@@ -612,7 +617,7 @@ func activate_nuke():
 # ==============================================================
 func set_character(char_type: String):
 	player_stats.character_type = char_type
-	
+
 	# Update sprite if it exists
 	if sprite and ResourceLoader.exists("res://female_hero.png") and char_type == "swordmaiden":
 		sprite.texture = load("res://female_hero.png")
@@ -620,3 +625,49 @@ func set_character(char_type: String):
 	elif sprite and char_type == "ranger":
 		# Keep default player sprite
 		pass
+
+# ==============================================================
+# 17. POWERUP UI
+# ==============================================================
+func show_powerup_text(text: String, color: Color):
+	# Show floating text above player
+	const FLOATING_DMG_SCENE = preload("res://FloatingDmg.tscn")
+	if not FLOATING_DMG_SCENE:
+		return
+
+	var dmg = FLOATING_DMG_SCENE.instantiate()
+	var ui_layer = get_tree().root.get_node_or_null("MainGame/UILayer")
+	if ui_layer:
+		ui_layer.add_child(dmg)
+	else:
+		get_parent().add_child(dmg)
+
+	dmg.global_position = global_position - Vector2(0, 60)
+	if dmg.has_method("set_damage_text"):
+		dmg.set_damage_text(text, color)
+
+func create_powerup_display(powerup_type: String, duration: float):
+	# Create powerup display in top-right corner
+	const POWERUP_DISPLAY_SCENE = preload("res://PowerupDisplay.tscn")
+	if not POWERUP_DISPLAY_SCENE:
+		return
+
+	var ui_layer = get_tree().root.get_node_or_null("MainGame/UILayer")
+	if not ui_layer:
+		return
+
+	var display = POWERUP_DISPLAY_SCENE.instantiate()
+	display.setup(powerup_type, duration)
+
+	# Position in top-right corner
+	display.position = Vector2(get_viewport().get_visible_rect().size.x - 60, 80)
+
+	# Offset down for multiple active powerups
+	var existing_powerups = 0
+	for child in ui_layer.get_children():
+		if child.has_method("setup"):  # Check if it's a PowerupDisplay
+			existing_powerups += 1
+
+	display.position.y += existing_powerups * 60
+
+	ui_layer.add_child(display)
