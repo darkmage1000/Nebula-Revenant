@@ -74,10 +74,17 @@ func _show_blue_damage(mob: Node2D, amount: float):
 	var ui_layer = get_tree().root.get_node_or_null("MainGame/UILayer")
 	if ui_layer:
 		ui_layer.add_child(dmg)
+		# Convert world position to screen position for CanvasLayer
+		var viewport = get_viewport()
+		if viewport:
+			var canvas_transform = viewport.get_canvas_transform()
+			var world_pos = mob.global_position + Vector2(0, -20)
+			var screen_pos = canvas_transform * world_pos
+			dmg.global_position = screen_pos
 	else:
 		get_parent().add_child(dmg)
-	
-	dmg.global_position = mob.global_position + Vector2(0, -20)
+		dmg.global_position = mob.global_position + Vector2(0, -20)
+
 	if dmg.has_method("set_damage_text"):
 		dmg.set_damage_text(amount, Color(0.1, 0.6, 1.0))
 
