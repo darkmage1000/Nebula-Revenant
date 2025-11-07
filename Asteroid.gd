@@ -6,10 +6,10 @@ signal destroyed
 var health: float = 15.0
 var max_health: float = 15.0
 
-# Drop chances
-const DROP_SHARD_CHANCE = 1.0  # 100% drop shards
-const DROP_POWERUP_CHANCE = 0.25  # 25% drop powerup
-const DROP_HEALTHPACK_CHANCE = 0.35  # 35% drop health pack
+# Drop chances (mutually exclusive)
+const DROP_SHARD_CHANCE = 0.75  # 75% drop shards
+const DROP_HEALTHPACK_CHANCE = 0.20  # 20% drop health pack
+const DROP_POWERUP_CHANCE = 0.05  # 5% drop powerup
 
 # Try to preload scenes (may not exist)
 var NEBULA_SHARD_SCENE = null
@@ -91,29 +91,33 @@ func explode():
 
 func spawn_drops():
 	var drop_position = global_position
-	
-	# Always drop shards (1-3) if scene exists
-	if randf() < DROP_SHARD_CHANCE and NEBULA_SHARD_SCENE:
-		var shard_count = randi_range(1, 3)
-		for i in range(shard_count):
-			var shard = NEBULA_SHARD_SCENE.instantiate()
-			var offset = Vector2(randf_range(-30, 30), randf_range(-30, 30))
-			shard.global_position = drop_position + offset
-			if shard.has_method("set") and "value" in shard:
-				shard.value = 1
-			get_parent().add_child(shard)
-	elif randf() < DROP_SHARD_CHANCE:
-		# If no shard scene, give currency directly to player
-		var player = get_tree().get_first_node_in_group("player_group")
-		if player and player.has_method("collect_currency"):
-			player.collect_currency(randi_range(1, 3))
-	
-	# 35% chance for health pack
-	if randf() < DROP_HEALTHPACK_CHANCE:
+
+	# Roll for drop type: 75% shards, 20% health pack, 5% powerups
+	var roll = randf()
+
+	if roll < 0.75:
+		# 75% chance for shards (1-3)
+		if NEBULA_SHARD_SCENE:
+			var shard_count = randi_range(1, 3)
+			for i in range(shard_count):
+				var shard = NEBULA_SHARD_SCENE.instantiate()
+				var offset = Vector2(randf_range(-30, 30), randf_range(-30, 30))
+				shard.global_position = drop_position + offset
+				if shard.has_method("set") and "value" in shard:
+					shard.value = 1
+				get_parent().add_child(shard)
+		else:
+			# If no shard scene, give currency directly to player
+			var player = get_tree().get_first_node_in_group("player_group")
+			if player and player.has_method("collect_currency"):
+				player.collect_currency(randi_range(1, 3))
+
+	elif roll < 0.95:
+		# 20% chance for health pack (0.75 to 0.95)
 		spawn_healthpack(drop_position)
-	
-	# 25% chance for powerup (only if no health pack)
-	elif randf() < DROP_POWERUP_CHANCE:
+
+	else:
+		# 5% chance for powerup (0.95 to 1.0)
 		spawn_powerup(drop_position)
 
 func spawn_healthpack(pos: Vector2):

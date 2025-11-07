@@ -123,26 +123,36 @@ func take_damage(amount: float, is_dot: bool = false, is_crit: bool = false):
 		vial.global_position = global_position
 		vial.value = xp_value
 		get_parent().add_child(vial)
-		
-		# PHASE 4: Drop currency (5% chance per enemy)
-		if randf() < 0.05:  # 5% drop rate
-			var shard_value = 1  # Base shard value
-			if randf() < 0.1:  # 10% chance for bonus shard
-				shard_value = randi_range(2, 5)
-			
-			# Try to spawn shard (gracefully handle if scene doesn't exist)
-			var shard_scene = null
-			if ResourceLoader.exists("res://NebulaShard.tscn"):
-				shard_scene = ResourceLoader.load("res://NebulaShard.tscn", "PackedScene", ResourceLoader.CACHE_MODE_REUSE)
-			
-			if shard_scene:
-				var shard = shard_scene.instantiate()
-				if shard:
-					if shard.has_method("set") and "value" in shard:
-						shard.value = shard_value
-					shard.global_position = global_position + Vector2(randf_range(-20, 20), randf_range(-20, 20))
-					get_parent().add_child(shard)
-		
+
+		# 10% chance to drop something (shards, health pack, or powerup)
+		if randf() < 0.10:
+			var drop_roll = randf()
+			var drop_pos = global_position + Vector2(randf_range(-20, 20), randf_range(-20, 20))
+
+			if drop_roll < 0.33:
+				# Drop shards (33% of drops)
+				var shard_value = 1
+				if randf() < 0.1:  # 10% chance for bonus shard
+					shard_value = randi_range(2, 5)
+
+				if ResourceLoader.exists("res://NebulaShard.tscn"):
+					var shard_scene = ResourceLoader.load("res://NebulaShard.tscn", "PackedScene", ResourceLoader.CACHE_MODE_REUSE)
+					if shard_scene:
+						var shard = shard_scene.instantiate()
+						if shard:
+							if shard.has_method("set") and "value" in shard:
+								shard.value = shard_value
+							shard.global_position = drop_pos
+							get_parent().add_child(shard)
+
+			elif drop_roll < 0.66:
+				# Drop health pack (33% of drops)
+				spawn_healthpack(drop_pos)
+
+			else:
+				# Drop powerup (33% of drops)
+				spawn_powerup(drop_pos)
+
 		queue_free()
 
 func start_dot(source_key: String, damage_per_sec: float, num_ticks: int, color: Color):
@@ -179,7 +189,110 @@ func show_damage_number(amount: float, color: Color):
 func apply_knockback(knockback_amount: float, source_position: Vector2):
 	if knockback_amount <= 0.0:
 		return
-	
+
 	var direction = global_position.direction_to(source_position).normalized()
 	const KNOCKBACK_PUSH_VELOCITY = 1500.0
 	velocity = direction * -1.0 * (knockback_amount / 50.0) * KNOCKBACK_PUSH_VELOCITY
+
+func spawn_healthpack(pos: Vector2):
+	# Create health pack at drop position
+	var healthpack = Area2D.new()
+	healthpack.global_position = pos
+	healthpack.add_to_group("healthpack")
+	healthpack.collision_layer = 8
+	healthpack.collision_mask = 4
+
+	# Visual - Green plus sign
+	var sprite = Sprite2D.new()
+	sprite.texture = create_plus_texture(25, Color(0, 1, 0, 1))
+	healthpack.add_child(sprite)
+
+	# Collision
+	var collision = CollisionShape2D.new()
+	var shape = CircleShape2D.new()
+	shape.radius = 25
+	collision.shape = shape
+	healthpack.add_child(collision)
+
+	get_parent().add_child(healthpack)
+
+func spawn_powerup(pos: Vector2):
+	# Randomly choose powerup type
+	var powerup_types = ["invincible", "magnet", "attack_speed", "nuke"]
+	var powerup_type = powerup_types[randi() % powerup_types.size()]
+
+	# Create powerup
+	var powerup = Area2D.new()
+	powerup.global_position = pos
+	powerup.add_to_group("powerup")
+	powerup.set_meta("powerup_type", powerup_type)
+	powerup.collision_layer = 8
+	powerup.collision_mask = 4
+
+	# Visual based on type
+	var color = Color(1, 1, 0, 1)
+	match powerup_type:
+		"invincible":
+			color = Color(1, 1, 0, 1)
+		"magnet":
+			color = Color(0, 1, 1, 1)
+		"attack_speed":
+			color = Color(1, 0, 1, 1)
+		"nuke":
+			color = Color(1, 0.5, 0, 1)
+
+	var sprite = Sprite2D.new()
+	sprite.texture = create_star_texture(30, color)
+	powerup.add_child(sprite)
+
+	# Collision
+	var collision = CollisionShape2D.new()
+	var shape = CircleShape2D.new()
+	shape.radius = 30
+	collision.shape = shape
+	powerup.add_child(collision)
+
+	get_parent().add_child(powerup)
+
+func create_plus_texture(radius: float, color: Color) -> ImageTexture:
+	var size = int(radius * 2.5)
+	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
+	var center = Vector2(size / 2, size / 2)
+	var thickness = radius * 0.4
+
+	for x in range(size):
+		for y in range(size):
+			var pos = Vector2(x, y)
+			if abs(pos.x - center.x) <= thickness or abs(pos.y - center.y) <= thickness:
+				img.set_pixel(x, y, color)
+
+	return ImageTexture.create_from_image(img)
+
+func create_star_texture(radius: float, color: Color) -> ImageTexture:
+	var size = int(radius * 3)
+	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
+	var center = Vector2(size / 2, size / 2)
+
+	for x in range(size):
+		for y in range(size):
+			var pos = Vector2(x, y) - center
+			var angle = pos.angle()
+			var dist = pos.length()
+
+			# Create 5-pointed star
+			var star_radius = radius
+			for i in range(5):
+				var point_angle = (i * TAU / 5.0) - PI/2
+				var angle_diff = abs(angle - point_angle)
+				if angle_diff > PI:
+					angle_diff = TAU - angle_diff
+
+				if angle_diff < 0.6 and dist <= star_radius * 1.3:
+					img.set_pixel(x, y, color)
+					break
+
+			# Fill center
+			if dist <= radius * 0.5:
+				img.set_pixel(x, y, color)
+
+	return ImageTexture.create_from_image(img)
