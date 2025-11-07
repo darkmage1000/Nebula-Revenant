@@ -112,13 +112,23 @@ func add_spacing(height: int):
 
 func _on_exit_pressed():
 	print("🏠 Game Over: Exit button pressed!")
+
 	# Disable input processing to prevent double-clicks
 	if exit_button:
 		exit_button.disabled = true
-	# Unpause game first
+
+	# CRITICAL: Unpause BEFORE changing scene
 	get_tree().paused = false
+
+	# Disable ALL input processing
+	set_process_input(false)
+	set_process_unhandled_input(false)
+
 	# Emit signal (for any listeners)
 	exit_to_menu.emit()
-	# Change to main menu
-	get_tree().change_scene_to_file("res://MainMenu.tscn")
+
+	# Change scene on next frame to ensure unpause takes effect
+	await get_tree().process_frame
+
 	print("✅ Game Over: Changing to main menu...")
+	get_tree().change_scene_to_file("res://MainMenu.tscn")
