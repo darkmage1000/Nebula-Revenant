@@ -14,9 +14,9 @@ var upgrade_options: Array = [
 	{"type": "unlock", "weapon": "grenade", "label": "💣 Unlock Grenade Launcher", "desc": "Explosive area damage. Long-range lobbed projectiles.", "rarity": "uncommon"},
 	{"type": "unlock", "weapon": "aura", "label": "☢️ Unlock Radiation Aura", "desc": "Passive damage field. Constantly hurts nearby enemies.", "rarity": "rare"},
 	
-	# ==================== OFFENSE STATS (PHASE 3 REBALANCED) ====================
-	{"type": "stat", "key": "damage_mult", "value": 0.08, "label": "⚔️ Damage +8%", "desc": "All weapons deal more damage", "rarity": "common"},
-	{"type": "stat", "key": "damage_mult", "value": 0.15, "label": "⚔️ Damage +15%", "desc": "Significant damage boost to all weapons", "rarity": "uncommon"},
+	# ==================== OFFENSE STATS (HEAVILY NERFED) ====================
+	{"type": "stat", "key": "damage_mult", "value": 0.04, "label": "⚔️ Damage +4%", "desc": "All weapons deal more damage", "rarity": "common"},
+	{"type": "stat", "key": "damage_mult", "value": 0.08, "label": "⚔️ Damage +8%", "desc": "Significant damage boost to all weapons", "rarity": "uncommon"},
 	{"type": "stat", "key": "attack_speed_mult", "value": 0.10, "label": "⚡ Attack Speed +10%", "desc": "All weapons fire faster", "rarity": "common"},
 	{"type": "stat", "key": "attack_speed_mult", "value": 0.18, "label": "⚡ Attack Speed +18%", "desc": "Major fire rate increase", "rarity": "uncommon"},
 	{"type": "stat", "key": "crit_chance", "value": 0.03, "label": "🎯 Crit Chance +3%", "desc": "Higher chance for critical hits", "rarity": "common"},
@@ -30,11 +30,11 @@ var upgrade_options: Array = [
 	{"type": "stat", "key": "max_health", "value": 30, "label": "❤️ Max HP +30", "desc": "Increases maximum health", "rarity": "common"},
 	{"type": "stat", "key": "max_health", "value": 50, "label": "❤️ Max HP +50", "desc": "Large health increase", "rarity": "uncommon"},
 	{"type": "stat", "key": "max_health", "value": 100, "label": "❤️ Max HP +100", "desc": "Massive health boost", "rarity": "rare"},
-	{"type": "stat", "key": "health_regen", "value": 0.5, "label": "💚 Regen +0.5/sec", "desc": "Slowly regenerate health", "rarity": "common"},
-	{"type": "stat", "key": "health_regen", "value": 1.5, "label": "💚 Regen +1.5/sec", "desc": "Faster health regeneration", "rarity": "uncommon"},
-	{"type": "stat", "key": "health_regen", "value": 3.0, "label": "💚 Regen +3.0/sec", "desc": "Rapid health regeneration", "rarity": "rare"},
-	{"type": "stat", "key": "lifesteal", "value": 0.05, "label": "🩸 Lifesteal +5%", "desc": "Heal from damage dealt", "rarity": "uncommon"},
-	{"type": "stat", "key": "lifesteal", "value": 0.10, "label": "🩸 Lifesteal +10%", "desc": "Significant healing from damage", "rarity": "rare"},
+	{"type": "stat", "key": "health_regen", "value": 0.25, "label": "💚 Regen +0.25/sec", "desc": "Slowly regenerate health", "rarity": "common"},
+	{"type": "stat", "key": "health_regen", "value": 0.75, "label": "💚 Regen +0.75/sec", "desc": "Faster health regeneration", "rarity": "uncommon"},
+	{"type": "stat", "key": "health_regen", "value": 1.5, "label": "💚 Regen +1.5/sec", "desc": "Rapid health regeneration", "rarity": "rare"},
+	{"type": "stat", "key": "lifesteal", "value": 0.025, "label": "🩸 Lifesteal +2.5%", "desc": "Heal from damage dealt", "rarity": "uncommon"},
+	{"type": "stat", "key": "lifesteal", "value": 0.05, "label": "🩸 Lifesteal +5%", "desc": "Significant healing from damage", "rarity": "rare"},
 	{"type": "stat", "key": "armor", "value": 5, "label": "🛡️ Armor +5", "desc": "Reduces incoming damage", "rarity": "common"},
 	{"type": "stat", "key": "armor", "value": 10, "label": "🛡️ Armor +10", "desc": "Major damage reduction", "rarity": "uncommon"},
 	
@@ -47,34 +47,34 @@ var upgrade_options: Array = [
 	{"type": "stat", "key": "luck", "value": 2, "label": "🍀 Luck +2", "desc": "Great fortune favors you", "rarity": "legendary"},
 	{"type": "stat", "key": "max_weapon_slots", "value": 1, "label": "🔧 +1 Weapon Slot", "desc": "Carry more weapons at once", "rarity": "legendary"},
 	
-	# ==================== PISTOL UPGRADES (PHASE 3 REBALANCED) ====================
-	{"type": "weapon", "weapon": "pistol", "key": "damage", "value": 3, "label": "🔫 Pistol: +3 Damage", "desc": "More damage per shot", "rarity": "common"},
-	{"type": "weapon", "weapon": "pistol", "key": "damage", "value": 5, "label": "🔫 Pistol: +5 Damage", "desc": "Major damage increase", "rarity": "uncommon"},
+	# ==================== PISTOL UPGRADES (HEAVILY NERFED) ====================
+	{"type": "weapon", "weapon": "pistol", "key": "damage", "value": 1.5, "label": "🔫 Pistol: +1.5 Damage", "desc": "More damage per shot", "rarity": "common"},
+	{"type": "weapon", "weapon": "pistol", "key": "damage", "value": 2.5, "label": "🔫 Pistol: +2.5 Damage", "desc": "Major damage increase", "rarity": "uncommon"},
 	{"type": "weapon", "weapon": "pistol", "key": "attack_speed", "value": 0.10, "label": "🔫 Pistol: +10% Fire Rate", "desc": "Shoot faster", "rarity": "common"},
 	{"type": "weapon", "weapon": "pistol", "key": "attack_speed", "value": 0.20, "label": "🔫 Pistol: +20% Fire Rate", "desc": "Rapid fire mode", "rarity": "uncommon"},
 	{"type": "weapon", "weapon": "pistol", "key": "pierce", "value": 1, "label": "🔫 Pistol: +1 Pierce", "desc": "Bullets pass through enemies", "rarity": "rare"},
 	{"type": "weapon", "weapon": "pistol", "key": "projectiles", "value": 1, "label": "🔫 Pistol: +1 Projectile", "desc": "Fire an extra bullet", "rarity": "rare"},
 	
 	# ==================== SHOTGUN UPGRADES ====================
-	{"type": "weapon", "weapon": "shotgun", "key": "damage", "value": 3, "label": "💥 Shotgun: +3 Damage", "desc": "Each pellet hits harder", "rarity": "common"},
-	{"type": "weapon", "weapon": "shotgun", "key": "damage", "value": 5, "label": "💥 Shotgun: +5 Damage", "desc": "Devastating pellet damage", "rarity": "uncommon"},
+	{"type": "weapon", "weapon": "shotgun", "key": "damage", "value": 1.5, "label": "💥 Shotgun: +1.5 Damage", "desc": "Each pellet hits harder", "rarity": "common"},
+	{"type": "weapon", "weapon": "shotgun", "key": "damage", "value": 2.5, "label": "💥 Shotgun: +2.5 Damage", "desc": "Devastating pellet damage", "rarity": "uncommon"},
 	{"type": "weapon", "weapon": "shotgun", "key": "projectiles", "value": 2, "label": "💥 Shotgun: +2 Pellets", "desc": "Fire more pellets per shot", "rarity": "uncommon"},
 	{"type": "weapon", "weapon": "shotgun", "key": "attack_speed", "value": 0.20, "label": "💥 Shotgun: +20% Fire Rate", "desc": "Faster between shots", "rarity": "common"},
 	{"type": "weapon", "weapon": "shotgun", "key": "pierce", "value": 1, "label": "💥 Shotgun: +1 Pierce", "desc": "Pellets pass through enemies", "rarity": "rare"},
 	{"type": "weapon", "weapon": "shotgun", "key": "knockback", "value": 30, "label": "💥 Shotgun: +30 Knockback", "desc": "Blast enemies away", "rarity": "uncommon"},
 	
 	# ==================== GRENADE UPGRADES ====================
-	{"type": "weapon", "weapon": "grenade", "key": "damage", "value": 15, "label": "💣 Grenade: +15 Damage", "desc": "Bigger explosions", "rarity": "common"},
-	{"type": "weapon", "weapon": "grenade", "key": "damage", "value": 30, "label": "💣 Grenade: +30 Damage", "desc": "Massive explosion damage", "rarity": "uncommon"},
+	{"type": "weapon", "weapon": "grenade", "key": "damage", "value": 8, "label": "💣 Grenade: +8 Damage", "desc": "Bigger explosions", "rarity": "common"},
+	{"type": "weapon", "weapon": "grenade", "key": "damage", "value": 15, "label": "💣 Grenade: +15 Damage", "desc": "Massive explosion damage", "rarity": "uncommon"},
 	{"type": "weapon", "weapon": "grenade", "key": "aoe", "value": 20, "label": "💣 Grenade: +20 Blast Radius", "desc": "Larger explosion area", "rarity": "uncommon"},
 	{"type": "weapon", "weapon": "grenade", "key": "aoe", "value": 40, "label": "💣 Grenade: +40 Blast Radius", "desc": "Huge explosion radius", "rarity": "rare"},
 	{"type": "weapon", "weapon": "grenade", "key": "attack_speed", "value": 0.20, "label": "💣 Grenade: +20% Throw Speed", "desc": "Throw grenades faster", "rarity": "common"},
 	{"type": "weapon", "weapon": "grenade", "key": "projectiles", "value": 1, "label": "💣 Grenade: +1 Grenade", "desc": "Throw multiple grenades", "rarity": "legendary"},
 	
 	# ==================== AURA UPGRADES ====================
-	{"type": "weapon", "weapon": "aura", "key": "damage", "value": 5, "label": "☢️ Aura: +5 Damage", "desc": "Stronger radiation damage", "rarity": "common"},
-	{"type": "weapon", "weapon": "aura", "key": "damage", "value": 10, "label": "☢️ Aura: +10 Damage", "desc": "Intense radiation", "rarity": "uncommon"},
-	{"type": "weapon", "weapon": "aura", "key": "damage", "value": 20, "label": "☢️ Aura: +20 Damage", "desc": "Devastating radiation field", "rarity": "rare"},
+	{"type": "weapon", "weapon": "aura", "key": "damage", "value": 2.5, "label": "☢️ Aura: +2.5 Damage", "desc": "Stronger radiation damage", "rarity": "common"},
+	{"type": "weapon", "weapon": "aura", "key": "damage", "value": 5, "label": "☢️ Aura: +5 Damage", "desc": "Intense radiation", "rarity": "uncommon"},
+	{"type": "weapon", "weapon": "aura", "key": "damage", "value": 10, "label": "☢️ Aura: +10 Damage", "desc": "Devastating radiation field", "rarity": "rare"},
 	{"type": "weapon", "weapon": "aura", "key": "aoe", "value": 25, "label": "☢️ Aura: +25 Radius", "desc": "Larger damage field", "rarity": "uncommon"},
 	{"type": "weapon", "weapon": "aura", "key": "aoe", "value": 50, "label": "☢️ Aura: +50 Radius", "desc": "Massive damage field", "rarity": "rare"},
 	{"type": "weapon", "weapon": "aura", "key": "attack_speed", "value": 0.25, "label": "☢️ Aura: +25% Tick Rate", "desc": "Damage enemies more frequently", "rarity": "uncommon"},

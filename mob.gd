@@ -129,8 +129,8 @@ func take_damage(amount: float, is_dot: bool = false, is_crit: bool = false):
 			var drop_roll = randf()
 			var drop_pos = global_position + Vector2(randf_range(-20, 20), randf_range(-20, 20))
 
-			if drop_roll < 0.33:
-				# Drop shards (33% of drops)
+			if drop_roll < 0.75:
+				# Drop shards (75% of drops = 7.5% overall) - INCREASED!
 				var shard_value = 1
 				if randf() < 0.1:  # 10% chance for bonus shard
 					shard_value = randi_range(2, 5)
@@ -145,12 +145,12 @@ func take_damage(amount: float, is_dot: bool = false, is_crit: bool = false):
 							shard.global_position = drop_pos
 							get_parent().add_child(shard)
 
-			elif drop_roll < 0.66:
-				# Drop health pack (33% of drops)
+			elif drop_roll < 0.85:
+				# Drop health pack (10% of drops = 1% overall) - LOWEST! Was 3.3%
 				spawn_healthpack(drop_pos)
 
 			else:
-				# Drop powerup (33% of drops)
+				# Drop powerup (15% of drops = 1.5% overall) - NERFED! Was 3.3%
 				spawn_powerup(drop_pos)
 
 		queue_free()
