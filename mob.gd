@@ -174,15 +174,21 @@ func stop_dot(source_key: String):
 func show_damage_number(amount: float, color: Color):
 	if not FLOATING_DMG_SCENE:
 		return
-		
+
 	var dmg = FLOATING_DMG_SCENE.instantiate()
 	var ui_layer = get_tree().root.get_node_or_null("MainGame/UILayer")
 	if ui_layer:
 		ui_layer.add_child(dmg)
+		# Convert world position to screen position for CanvasLayer
+		var viewport = get_viewport()
+		if viewport:
+			var canvas_transform = viewport.get_canvas_transform()
+			var screen_pos = canvas_transform * global_position
+			dmg.global_position = screen_pos
 	else:
 		get_parent().add_child(dmg)
-	
-	dmg.global_position = global_position
+		dmg.global_position = global_position
+
 	if dmg.has_method("set_damage_text"):
 		dmg.set_damage_text(amount, color)
 
