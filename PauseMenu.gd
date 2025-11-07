@@ -224,11 +224,8 @@ func _on_main_menu_pressed():
 	set_process_input(false)
 	set_process(false)
 	set_physics_process(false)
-	# Unpause the game FIRST
+	# Unpause the game and immediately change scene
 	get_tree().paused = false
-	# Wait one frame to ensure unpause takes effect
-	await get_tree().process_frame
-	# Now change scene
 	get_tree().change_scene_to_file("res://MainMenu.tscn")
 
 func _on_quit_pressed():
