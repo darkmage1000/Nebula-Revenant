@@ -1,0 +1,10 @@
+[gd_scene load_steps=2 format=3 uid="uid://item_inventory_ui"]
+
+[ext_resource type="Script" path="res://ItemInventoryUI.gd" id="1_script"]
+
+[node name="ItemInventoryUI" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+offset_left = 10.0
+offset_top = 150.0
+script = ExtResource("1_script")

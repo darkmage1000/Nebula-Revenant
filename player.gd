@@ -571,13 +571,12 @@ func activate_invincibility():
 func activate_magnet():
 	print("🧲 MAGNET activated!")
 	show_powerup_text("MAGNET!", Color(0, 1, 1, 1))
+	# Pull all XP vials visually to player
 	var vials = get_tree().get_nodes_in_group("xp_vial")
 	for vial in vials:
 		if is_instance_valid(vial) and vial.has_method("start_pull"):
 			vial.start_pull(self)
-			if vial.has_method("get") and "value" in vial:
-				pickup_xp(vial.value)
-				vial.queue_free()
+			# Vials will move to player and collect automatically
 
 func activate_triple_attack_speed():
 	print("⚡ TRIPLE ATTACK SPEED for 10 seconds!")
