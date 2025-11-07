@@ -212,8 +212,10 @@ func _physics_process(delta):
 		if area.is_in_group("xp_vial") and area.has_method("start_pull"):
 			area.start_pull(self)
 		elif area.is_in_group("healthpack"):
-			pickup_healthpack()
-			area.queue_free()
+			# Only pick up health pack if not at full health
+			if player_stats.current_health < player_stats.max_health:
+				pickup_healthpack()
+				area.queue_free()
 		elif area.is_in_group("powerup"):
 			pickup_powerup(area)
 			area.queue_free()
@@ -521,8 +523,10 @@ func collect_currency(amount: int):
 func _on_pickup_radius_area_entered(area: Area2D):
 	# This provides instant pickup on first contact
 	if area.is_in_group("healthpack"):
-		pickup_healthpack()
-		area.queue_free()
+		# Only pick up health pack if not at full health
+		if player_stats.current_health < player_stats.max_health:
+			pickup_healthpack()
+			area.queue_free()
 	elif area.is_in_group("powerup"):
 		pickup_powerup(area)
 		area.queue_free()
