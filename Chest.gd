@@ -35,10 +35,10 @@ var item_pool = {
 		},
 		{
 			"name": "Worn Gloves",
-			"description": "+10% Attack Speed",
+			"description": "+5% Attack Speed",
 			"effect_type": "stat",
 			"stat": "attack_speed_mult",
-			"value": 0.1,
+			"value": 0.05,
 			"icon_color": Color(1.0, 0.9, 0.3)
 		},
 		{
@@ -69,10 +69,10 @@ var item_pool = {
 		},
 		{
 			"name": "Energy Drink",
-			"description": "+25% Attack Speed",
+			"description": "+12% Attack Speed",
 			"effect_type": "stat",
 			"stat": "attack_speed_mult",
-			"value": 0.25,
+			"value": 0.12,
 			"icon_color": Color(0.3, 0.6, 1.0)
 		},
 		{
@@ -135,10 +135,10 @@ var item_pool = {
 		},
 		{
 			"name": "Time Warp Crystal",
-			"description": "+40% Attack Speed",
+			"description": "+20% Attack Speed",
 			"effect_type": "stat",
 			"stat": "attack_speed_mult",
-			"value": 0.4,
+			"value": 0.2,
 			"icon_color": Color(0.2, 1.0, 0.3)
 		},
 		{
@@ -189,10 +189,10 @@ var item_pool = {
 		},
 		{
 			"name": "Chrono Accelerator",
-			"description": "x2 Attack Speed + +50% Move Speed",
+			"description": "+50% Attack Speed + +50% Move Speed",
 			"effect_type": "multi",
 			"effects": [
-				{"stat": "attack_speed_mult", "value": 1.0},  # x2
+				{"stat": "attack_speed_mult", "value": 0.5},  # +50%
 				{"stat": "speed", "value": 0.5}
 			],
 			"icon_color": Color(0.8, 0.3, 1.0)
@@ -209,13 +209,13 @@ var item_pool = {
 		},
 		{
 			"name": "Apocalypse Engine",
-			"description": "+40% Damage, +75% Other Stats",
+			"description": "+40% Damage, +35% Other Stats",
 			"effect_type": "multi",
 			"effects": [
 				{"stat": "damage_mult", "value": 0.40},
-				{"stat": "attack_speed_mult", "value": 0.75},
-				{"stat": "speed", "value": 0.75},
-				{"stat": "aoe_mult", "value": 0.75}
+				{"stat": "attack_speed_mult", "value": 0.35},
+				{"stat": "speed", "value": 0.35},
+				{"stat": "aoe_mult", "value": 0.35}
 			],
 			"icon_color": Color(0.8, 0.3, 1.0)
 		}

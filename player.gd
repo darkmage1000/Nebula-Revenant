@@ -123,16 +123,19 @@ var weapon_upgrade_paths = {
 # 6. _READY
 # ==============================================================
 func _ready():
+	# Add player to group so chests can find it
+	add_to_group("player")
+
 	player_stats.current_health = player_stats.max_health
 	apply_starting_bonuses()
 	apply_character_bonuses()
 	run_stats.start_time = Time.get_ticks_msec() / 1000.0
-	
+
 	if pickup_radius:
 		var collision_shape = pickup_radius.get_node("CollisionShape2D")
 		if collision_shape and collision_shape.shape:
 			collision_shape.shape.radius = player_stats.pickup_radius
-	
+
 	# Set starting weapon based on character
 	if player_stats.character_type == "ranger":
 		add_weapon("pistol")
