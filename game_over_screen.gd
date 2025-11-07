@@ -117,18 +117,22 @@ func _on_exit_pressed():
 	if exit_button:
 		exit_button.disabled = true
 
-	# CRITICAL: Unpause BEFORE changing scene
+	# CRITICAL: Unpause FIRST
 	get_tree().paused = false
-
-	# Disable ALL input processing
-	set_process_input(false)
-	set_process_unhandled_input(false)
+	print("✅ Game unpaused")
 
 	# Emit signal (for any listeners)
 	exit_to_menu.emit()
 
-	# Change scene on next frame to ensure unpause takes effect
-	await get_tree().process_frame
-
-	print("✅ Game Over: Changing to main menu...")
-	get_tree().change_scene_to_file("res://MainMenu.tscn")
+	# Use a one-shot timer to delay scene change (more reliable than await)
+	var timer = Timer.new()
+	timer.wait_time = 0.1  # Small delay to ensure unpause takes effect
+	timer.one_shot = true
+	timer.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(timer)
+	timer.timeout.connect(func():
+		print("✅ Timer fired, changing scene to MainMenu...")
+		get_tree().change_scene_to_file("res://MainMenu.tscn")
+	)
+	timer.start()
+	print("✅ Timer started, will change scene in 0.1s")

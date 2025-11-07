@@ -239,18 +239,22 @@ func _on_main_menu_pressed():
 		save_manager.end_run()
 		print("💾 Run progress saved before quitting")
 
-	# CRITICAL: Unpause BEFORE changing scene
+	# CRITICAL: Unpause FIRST
 	get_tree().paused = false
+	print("✅ Game unpaused")
 
-	# Disable ALL input processing
-	set_process_input(false)
-	set_process_unhandled_input(false)
-
-	# Change scene on next frame to ensure unpause takes effect
-	await get_tree().process_frame
-
-	print("✅ Changing to main menu scene...")
-	get_tree().change_scene_to_file("res://MainMenu.tscn")
+	# Use a one-shot timer to delay scene change (more reliable than await)
+	var timer = Timer.new()
+	timer.wait_time = 0.1  # Small delay to ensure unpause takes effect
+	timer.one_shot = true
+	timer.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(timer)
+	timer.timeout.connect(func():
+		print("✅ Timer fired, changing scene to MainMenu...")
+		get_tree().change_scene_to_file("res://MainMenu.tscn")
+	)
+	timer.start()
+	print("✅ Timer started, will change scene in 0.1s")
 
 func _on_quit_pressed():
 	print("🚪 Quitting game...")
