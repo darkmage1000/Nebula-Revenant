@@ -283,6 +283,9 @@ func animate_chest():
 func _on_body_entered(body: Node2D):
 	# Check if body is the player using group membership instead of name
 	if body.is_in_group("player") and not is_opened:
+		# Immediately disable monitoring to prevent double-triggers
+		set_deferred("monitoring", false)
+		set_deferred("monitorable", false)
 		open_chest()
 
 func open_chest():
@@ -290,6 +293,12 @@ func open_chest():
 		return
 
 	is_opened = true
+
+	# CRITICAL: Disable all collision immediately
+	monitoring = false
+	monitorable = false
+	set_physics_process(false)
+	set_process(false)
 
 	# DON'T PAUSE - just apply item directly
 	# Roll for rarity first
@@ -403,9 +412,30 @@ func apply_item_to_player():
 		print("✨ Applied item (unnamed)")
 
 func play_open_animation():
-	# Chest opens and disappears
+	# Stop all existing tweens first to prevent conflicts
+	var tree = get_tree()
+	if tree:
+		tree.create_tween().kill()
+
+	# Disconnect all signals to prevent issues during cleanup
+	if body_entered.is_connected(_on_body_entered):
+		body_entered.disconnect(_on_body_entered)
+
+	# Create simple fade-out animation
 	var tween = create_tween()
+	if not tween:
+		# If tween creation fails, just free immediately
+		call_deferred("queue_free")
+		return
+
 	tween.set_parallel(true)
 	tween.tween_property(self, "scale", Vector2(1.5, 1.5), 0.3)
 	tween.tween_property(self, "modulate:a", 0.0, 0.3)
-	tween.finished.connect(func(): queue_free())
+
+	# Use call_deferred to ensure cleanup happens after physics
+	tween.finished.connect(func():
+		if is_instance_valid(self):
+			call_deferred("queue_free")
+	)
+
+	print("🎬 Chest animation started, will free in 0.3s")
