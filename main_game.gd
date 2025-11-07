@@ -1,4 +1,4 @@
-# main_game.gd – UPDATED: FASTER SPAWNS + FIRST BOSS @ 2:30 + CRASH-PROOF
+# main_game.gd – UPDATED: FASTER SPAWNS + FIRST BOSS @ 2:30 + CRASH-PROOF + ASTEROIDS
 extends Node2D
 
 # ------------------------------------------------------------------
@@ -8,6 +8,7 @@ const MOB_SCENE       = preload("res://mob.tscn")
 const VOID_MITE_SCENE = preload("res://VoidMite.tscn")
 const NEBULITH_COLOSSUS_SCENE = preload("res://NebulithColossus.tscn")
 const DARK_MAGE_SCENE = preload("res://DarkMage.tscn")
+const ASTEROID_SCENE  = preload("res://Asteroid.tscn")
 const XP_VIAL_SCENE   = preload("res://experience_vial.tscn")
 const CHEST_SCENE     = preload("res://Chest.tscn")
 const ITEM_UI_SCENE   = preload("res://ItemUI.tscn")
@@ -189,6 +190,10 @@ func _process(delta: float) -> void:
 		if game_time >= 120.0:
 			spawn_void_mite()
 
+		# Spawn asteroids occasionally (30% chance per spawn cycle)
+		if randf() < 0.30:
+			spawn_asteroid()
+
 		# After 6 minutes, occasionally spawn Nebulith Colossus (20% chance)
 		if game_time >= 360.0 and randf() < 0.20:
 			spawn_colossus()
@@ -236,6 +241,46 @@ func spawn_dark_mage() -> void:
 	if not is_instance_valid(player):
 		return
 	spawn_enemy(DARK_MAGE_SCENE)
+
+# Spawn Asteroid (destructible space rocks with loot)
+func spawn_asteroid() -> void:
+	if not is_instance_valid(player) or not ASTEROID_SCENE:
+		return
+
+	var asteroid = ASTEROID_SCENE.instantiate()
+
+	# Calculate spawn position offscreen like mobs
+	var screen_size = get_viewport_rect().size
+	var cam_pos = player.global_position
+
+	const ASTEROID_PADDING = 50.0
+	var total_buffer = OFFSCREEN_BUFFER + ASTEROID_PADDING
+
+	var left   = cam_pos.x - (screen_size.x * 0.5)
+	var right  = cam_pos.x + (screen_size.x * 0.5)
+	var top    = cam_pos.y - (screen_size.y * 0.5)
+	var bottom = cam_pos.y + (screen_size.y * 0.5)
+
+	# Pick random side (0=top, 1=right, 2=bottom, 3=left)
+	var side = randi() % 4
+	var spawn_pos: Vector2
+
+	match side:
+		0: # TOP
+			spawn_pos.x = randf_range(left - total_buffer, right + total_buffer)
+			spawn_pos.y = top - total_buffer
+		1: # RIGHT
+			spawn_pos.x = right + total_buffer
+			spawn_pos.y = randf_range(top - total_buffer, bottom + total_buffer)
+		2: # BOTTOM
+			spawn_pos.x = randf_range(left - total_buffer, right + total_buffer)
+			spawn_pos.y = bottom + total_buffer
+		3: # LEFT
+			spawn_pos.x = left - total_buffer
+			spawn_pos.y = randf_range(top - total_buffer, bottom + total_buffer)
+
+	asteroid.global_position = spawn_pos
+	add_child(asteroid)
 
 # Generic enemy spawner - FIXED: ALWAYS SPAWN OFFSCREEN
 func spawn_enemy(enemy_scene: PackedScene) -> void:

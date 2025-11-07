@@ -220,6 +220,11 @@ func _on_save_pressed():
 
 func _on_main_menu_pressed():
 	print("🏠 Returning to main menu...")
+
+	# Disable button to prevent double-clicking
+	if main_menu_button:
+		main_menu_button.disabled = true
+
 	# Save run progress before quitting
 	if has_node("/root/SaveManager") and is_instance_valid(player):
 		var save_manager = get_node("/root/SaveManager")
@@ -233,12 +238,18 @@ func _on_main_menu_pressed():
 		# End the run and save shards to bank
 		save_manager.end_run()
 		print("💾 Run progress saved before quitting")
-	# Disable ALL processing immediately
-	set_process_input(false)
-	set_process(false)
-	set_physics_process(false)
-	# Unpause the game and immediately change scene
+
+	# CRITICAL: Unpause BEFORE changing scene
 	get_tree().paused = false
+
+	# Disable ALL input processing
+	set_process_input(false)
+	set_process_unhandled_input(false)
+
+	# Change scene on next frame to ensure unpause takes effect
+	await get_tree().process_frame
+
+	print("✅ Changing to main menu scene...")
 	get_tree().change_scene_to_file("res://MainMenu.tscn")
 
 func _on_quit_pressed():
