@@ -19,6 +19,7 @@ var player_stats = {
 	"armor": 0,
 	"speed": 140.0,  # HEAVILY NERFED - just under mob base speed (150) for more challenge!
 	"attack_speed_mult": 1.0,
+	"attack_range_mult": 1.0,  # NEW: Multiplier for weapon attack ranges
 	"damage_mult": 1.0,
 	"aoe_mult": 1.0,
 	"projectiles": 0,

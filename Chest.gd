@@ -255,11 +255,16 @@ func update_chest_visual():
 		"green": Color(0.2, 1.0, 0.3),
 		"purple": Color(0.8, 0.3, 1.0)
 	}
-	
-	if sprite:
+
+	if is_instance_valid(sprite):
 		sprite.modulate = tier_colors.get(tier, Color.WHITE)
-	if glow:
+	else:
+		print("WARNING: Chest sprite node not found!")
+
+	if is_instance_valid(glow):
 		glow.modulate = tier_colors.get(tier, Color.WHITE)
+	else:
+		print("WARNING: Chest glow node not found!")
 
 func animate_chest():
 	# Bobbing animation
@@ -267,37 +272,44 @@ func animate_chest():
 	tween.set_loops()
 	tween.tween_property(self, "position:y", position.y - 10, 1.0)
 	tween.tween_property(self, "position:y", position.y, 1.0)
-	
+
 	# Glow pulse
-	if glow:
+	if is_instance_valid(glow):
 		var glow_tween = create_tween()
 		glow_tween.set_loops()
 		glow_tween.tween_property(glow, "scale", Vector2(1.2, 1.2), 0.8)
 		glow_tween.tween_property(glow, "scale", Vector2(1.0, 1.0), 0.8)
 
 func _on_body_entered(body: Node2D):
-	if body.name == "Player" and not is_opened:
+	# Check if body is the player using group membership instead of name
+	if body.is_in_group("player") and not is_opened:
 		open_chest()
 
 func open_chest():
 	if is_opened:
 		return
-	
+
 	is_opened = true
-	
+
 	# DON'T PAUSE - just apply item directly
 	# Roll for rarity first
 	rolled_rarity = roll_rarity()
-	
+
 	# Select item from rolled rarity
 	select_item_from_rarity(rolled_rarity)
-	
+
+	# Validate selected_item before applying
+	if selected_item.is_empty():
+		print("ERROR: No item was selected from chest!")
+		play_open_animation()
+		return
+
 	# Apply item immediately
 	apply_item_to_player()
-	
+
 	# Track in main game
 	var main_game = get_tree().root.get_node_or_null("MainGame")
-	if main_game and "items_collected" in main_game:
+	if is_instance_valid(main_game) and "items_collected" in main_game:
 		if selected_item.has("name") and selected_item.has("description"):
 			main_game.items_collected.append({
 				"name": selected_item.name,
@@ -305,7 +317,7 @@ func open_chest():
 				"description": selected_item.description
 			})
 			print("✨ Collected [%s] %s: %s" % [rolled_rarity.to_upper(), selected_item.name, selected_item.description])
-	
+
 	# Visual feedback
 	play_open_animation()
 
@@ -333,40 +345,62 @@ func select_item_from_rarity(rarity: String):
 		print("Chest rolled %s rarity: %s" % [rarity.to_upper(), selected_item.name])
 
 func apply_item_to_player():
+	# Find player with multiple safety checks
 	var player = get_tree().get_first_node_in_group("player")
 	if not is_instance_valid(player):
-		print("ERROR: Could not find player!")
+		print("ERROR: Could not find player in 'player' group!")
 		return
-	
+
+	# Validate player has required methods
+	if not player.has_method("upgrade_player_stat"):
+		print("ERROR: Player is missing upgrade_player_stat method!")
+		return
+
+	# Validate selected_item has effect_type
+	if not selected_item.has("effect_type"):
+		print("ERROR: Selected item has no effect_type!")
+		return
+
 	match selected_item.effect_type:
 		"stat":
 			if selected_item.has("stat") and selected_item.has("value"):
 				player.upgrade_player_stat(selected_item.stat, selected_item.value)
+			else:
+				print("ERROR: Stat item missing 'stat' or 'value' field!")
 		"multi":
 			if selected_item.has("effects"):
 				for effect in selected_item.effects:
 					if effect.has("stat") and effect.has("value"):
 						player.upgrade_player_stat(effect.stat, effect.value)
+					else:
+						print("WARNING: Multi-effect missing 'stat' or 'value' field, skipping")
 			if selected_item.has("weapon_effect") and "player_stats" in player and "current_weapons" in player.player_stats:
 				# Apply to all weapons
-				for weapon_key in player.player_stats.current_weapons:
-					if selected_item.weapon_effect.has("upgrade") and selected_item.weapon_effect.has("value"):
-						player.upgrade_weapon(
-							weapon_key,
-							selected_item.weapon_effect.upgrade,
-							selected_item.weapon_effect.value
-						)
+				if player.has_method("upgrade_weapon"):
+					for weapon_key in player.player_stats.current_weapons:
+						if selected_item.weapon_effect.has("upgrade") and selected_item.weapon_effect.has("value"):
+							player.upgrade_weapon(
+								weapon_key,
+								selected_item.weapon_effect.upgrade,
+								selected_item.weapon_effect.value
+							)
 		"all_weapons":
 			if "player_stats" in player and "current_weapons" in player.player_stats:
-				for weapon_key in player.player_stats.current_weapons:
-					if selected_item.has("upgrade") and selected_item.has("value"):
-						player.upgrade_weapon(
-							weapon_key,
-							selected_item.upgrade,
-							selected_item.value
-						)
-	
-	print("\u2728 Applied item: ", selected_item.name)
+				if player.has_method("upgrade_weapon"):
+					for weapon_key in player.player_stats.current_weapons:
+						if selected_item.has("upgrade") and selected_item.has("value"):
+							player.upgrade_weapon(
+								weapon_key,
+								selected_item.upgrade,
+								selected_item.value
+							)
+				else:
+					print("ERROR: Player is missing upgrade_weapon method!")
+
+	if selected_item.has("name"):
+		print("✨ Applied item: ", selected_item.name)
+	else:
+		print("✨ Applied item (unnamed)")
 
 func play_open_animation():
 	# Chest opens and disappears
