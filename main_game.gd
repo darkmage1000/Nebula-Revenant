@@ -12,6 +12,7 @@ const XP_VIAL_SCENE   = preload("res://experience_vial.tscn")
 const CHEST_SCENE     = preload("res://Chest.tscn")
 const ITEM_UI_SCENE   = preload("res://ItemUI.tscn")
 const GAME_HUD_SCENE  = preload("res://GameHUD.tscn")
+const MINIMAP_SCENE   = preload("res://Minimap.tscn")
 const PAUSE_MENU_SCENE = preload("res://PauseMenu.tscn")
 const ENEMY_HEALTH_BAR = preload("res://EnemyHealthBar.tscn")
 const GAME_OVER_SCENE = preload("res://GameOverScreen.tscn")  # PHASE 3
@@ -87,6 +88,14 @@ func setup_hud():
 		game_hud.main_game = self
 		add_child(game_hud)
 		print("✅ HUD created with player level: %d" % player.player_stats.level)
+
+	# Create minimap
+	if MINIMAP_SCENE and is_instance_valid(player):
+		var minimap = MINIMAP_SCENE.instantiate()
+		minimap.player = player
+		minimap.main_game = self
+		ui_layer.add_child(minimap)
+		print("✅ Minimap created")
 
 func _input(event: InputEvent) -> void:
 	# Pause menu with ESC

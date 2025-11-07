@@ -14,17 +14,25 @@ func _process(_delta: float):
 	if not is_instance_valid(target_mob):
 		queue_free()
 		return
-	
-	# Position above enemy
-	global_position = target_mob.global_position - Vector2(30, 50)
-	
+
+	# Convert world position to screen position
+	var world_pos = target_mob.global_position - Vector2(30, 50)
+	var viewport = get_viewport()
+	if viewport:
+		# Get the camera transform
+		var canvas_transform = viewport.get_canvas_transform()
+		var screen_pos = canvas_transform * world_pos
+
+		# Set position in screen space
+		global_position = screen_pos
+
 	# Update health bar
 	health_bar.max_value = target_mob.max_health
 	health_bar.value = target_mob.health
-	
+
 	# Update label (optional - comment out if you don't want numbers)
 	health_label.text = "%d" % int(target_mob.health)
-	
+
 	# Hide when at full health (optional)
 	if target_mob.health >= target_mob.max_health:
 		visible = false
