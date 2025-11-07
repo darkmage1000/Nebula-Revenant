@@ -1,0 +1,19 @@
+[gd_scene load_steps=4 format=3 uid="uid://dark_mage_scene"]
+
+[ext_resource type="Script" path="res://DarkMage.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://dark mage.png" id="2_sprite"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_darkmage"]
+radius = 25.0
+
+[node name="DarkMage" type="CharacterBody2D" groups=["mob"]]
+collision_layer = 2
+collision_mask = 0
+script = ExtResource("1_script")
+
+[node name="DarkMageSprite" type="Sprite2D" parent="."]
+scale = Vector2(0.4, 0.4)
+texture = ExtResource("2_sprite")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_darkmage")
