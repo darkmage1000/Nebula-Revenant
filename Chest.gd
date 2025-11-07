@@ -27,10 +27,10 @@ var item_pool = {
 		},
 		{
 			"name": "Old Bandage",
-			"description": "+1 HP/sec Regeneration",
+			"description": "+0.5 HP/sec Regeneration",
 			"effect_type": "stat",
 			"stat": "health_regen",
-			"value": 1.0,
+			"value": 0.5,
 			"icon_color": Color(1.0, 0.9, 0.3)
 		},
 		{
@@ -51,20 +51,20 @@ var item_pool = {
 		},
 		{
 			"name": "Cracked Lens",
-			"description": "+10% Damage",
+			"description": "+5% Damage",
 			"effect_type": "stat",
 			"stat": "damage_mult",
-			"value": 0.1,
+			"value": 0.05,
 			"icon_color": Color(1.0, 0.9, 0.3)
 		}
 	],
 	"blue": [  # UNCOMMON - Better boosts + special effects
 		{
 			"name": "Vampire Fang",
-			"description": "+3% Lifesteal",  # REDUCED from 8% - was too strong
+			"description": "+1.5% Lifesteal",  # HEAVILY NERFED - was 3%, now 1.5%
 			"effect_type": "stat",
 			"stat": "lifesteal",
-			"value": 0.03,
+			"value": 0.015,
 			"icon_color": Color(0.3, 0.6, 1.0)
 		},
 		{
@@ -111,18 +111,18 @@ var item_pool = {
 	"green": [  # RARE - Powerful effects
 		{
 			"name": "Phoenix Feather",
-			"description": "+2 HP/sec Regeneration",  # REDUCED from 5 - was too strong
+			"description": "+1 HP/sec Regeneration",  # HEAVILY NERFED - was 2, now 1
 			"effect_type": "stat",
 			"stat": "health_regen",
-			"value": 2.0,
+			"value": 1.0,
 			"icon_color": Color(0.2, 1.0, 0.3)
 		},
 		{
 			"name": "Berserker's Rage",
-			"description": "+50% Damage",
+			"description": "+25% Damage",
 			"effect_type": "stat",
 			"stat": "damage_mult",
-			"value": 0.5,
+			"value": 0.25,
 			"icon_color": Color(0.2, 1.0, 0.3)
 		},
 		{
@@ -161,19 +161,19 @@ var item_pool = {
 	"purple": [  # LEGENDARY - Game-changing items
 		{
 			"name": "God Slayer's Wrath",
-			"description": "x2 Damage Forever",
+			"description": "+50% Damage",
 			"effect_type": "stat",
 			"stat": "damage_mult",
-			"value": 1.0,  # Multiplies by 2
+			"value": 0.5,  # NERFED - was 1.0 (x2), now 0.5 (+50%)
 			"icon_color": Color(0.8, 0.3, 1.0)
 		},
 		{
 			"name": "Immortal's Blessing",
-			"description": "+300 HP + 4 HP/sec Regen",  # REDUCED regen from 10
+			"description": "+300 HP + 2 HP/sec Regen",  # HEAVILY NERFED - was 4, now 2
 			"effect_type": "multi",
 			"effects": [
 				{"stat": "max_health", "value": 300},
-				{"stat": "health_regen", "value": 4.0}
+				{"stat": "health_regen", "value": 2.0}
 			],
 			"icon_color": Color(0.8, 0.3, 1.0)
 		},
@@ -199,20 +199,20 @@ var item_pool = {
 		},
 		{
 			"name": "Soul Reaper",
-			"description": "+10% Lifesteal + +100% Damage",  # REDUCED lifesteal from 25%
+			"description": "+5% Lifesteal + +50% Damage",  # HEAVILY NERFED - lifesteal 10→5%, damage 100→50%
 			"effect_type": "multi",
 			"effects": [
-				{"stat": "lifesteal", "value": 0.10},
-				{"stat": "damage_mult", "value": 1.0}
+				{"stat": "lifesteal", "value": 0.05},
+				{"stat": "damage_mult", "value": 0.5}
 			],
 			"icon_color": Color(0.8, 0.3, 1.0)
 		},
 		{
 			"name": "Apocalypse Engine",
-			"description": "+75% All Stats",
+			"description": "+40% Damage, +75% Other Stats",
 			"effect_type": "multi",
 			"effects": [
-				{"stat": "damage_mult", "value": 0.75},
+				{"stat": "damage_mult", "value": 0.40},
 				{"stat": "attack_speed_mult", "value": 0.75},
 				{"stat": "speed", "value": 0.75},
 				{"stat": "aoe_mult", "value": 0.75}

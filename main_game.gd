@@ -156,8 +156,8 @@ func _process(delta: float) -> void:
 
 	# 90-SEC TANKIER + FASTER (was 2 min)
 	if fmod(game_time, TANKIER_INTERVAL) < delta:
-		difficulty_mult += 0.5  # REDUCED! Was 1.0, now 0.5 per interval
-		spawn_rate = max(0.4, spawn_rate * 0.85)  # SLOWER RAMP! Was 0.75, now 0.85 
+		difficulty_mult += 1.0  # INCREASED! Was 0.5, now 1.0 per interval for more challenge
+		spawn_rate = max(0.3, spawn_rate * 0.70)  # FASTER RAMP! Was 0.85, now 0.70 for aggressive scaling
 		print("⚡ DIFFICULTY UP! HP×%.1f | Spawn: %.2fs" % [difficulty_mult, spawn_rate])
 
 	# FIRST BOSS @ 2:30 (for testing)

@@ -17,7 +17,7 @@ var player_stats = {
 	"shield_recharge_rate": 5.0,
 	"lifesteal": 0.0,
 	"armor": 0,
-	"speed": 350.0,  # NERFED from 600 - much better for huge map!
+	"speed": 140.0,  # HEAVILY NERFED - just under mob base speed (150) for more challenge!
 	"attack_speed_mult": 1.0,
 	"damage_mult": 1.0,
 	"aoe_mult": 1.0,
