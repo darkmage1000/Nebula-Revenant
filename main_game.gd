@@ -7,6 +7,7 @@ extends Node2D
 const MOB_SCENE       = preload("res://mob.tscn")
 const VOID_MITE_SCENE = preload("res://VoidMite.tscn")
 const NEBULITH_COLOSSUS_SCENE = preload("res://NebulithColossus.tscn")
+const DARK_MAGE_SCENE = preload("res://DarkMage.tscn")
 const XP_VIAL_SCENE   = preload("res://experience_vial.tscn")
 const CHEST_SCENE     = preload("res://Chest.tscn")
 const ITEM_UI_SCENE   = preload("res://ItemUI.tscn")
@@ -166,14 +167,18 @@ func _process(delta: float) -> void:
 	if spawn_timer >= spawn_rate:
 		spawn_timer = 0.0
 		spawn_mob()
-		
+
 		# After 2 minutes, also spawn void mites!
 		if game_time >= 120.0:
 			spawn_void_mite()
-		
+
 		# After 6 minutes, occasionally spawn Nebulith Colossus (20% chance)
 		if game_time >= 360.0 and randf() < 0.20:
 			spawn_colossus()
+
+		# After 6 minutes, occasionally spawn Dark Mage (15% chance)
+		if game_time >= 360.0 and randf() < 0.15:
+			spawn_dark_mage()
 
 # ------------------------------------------------------------------
 # 7. SPAWN MOB – 4-SIDE OFF-SCREEN (WITH PERFORMANCE CAP)
@@ -208,6 +213,12 @@ func spawn_colossus() -> void:
 	if not is_instance_valid(player):
 		return
 	spawn_enemy(NEBULITH_COLOSSUS_SCENE)
+
+# Spawn Dark Mage (ranged enemy after 6 minutes)
+func spawn_dark_mage() -> void:
+	if not is_instance_valid(player):
+		return
+	spawn_enemy(DARK_MAGE_SCENE)
 
 # Generic enemy spawner - FIXED: ALWAYS SPAWN OFFSCREEN
 func spawn_enemy(enemy_scene: PackedScene) -> void:
