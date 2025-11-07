@@ -17,8 +17,8 @@ var upgrade_options: Array = [
 	# ==================== OFFENSE STATS (HEAVILY NERFED) ====================
 	{"type": "stat", "key": "damage_mult", "value": 0.04, "label": "⚔️ Damage +4%", "desc": "All weapons deal more damage", "rarity": "common"},
 	{"type": "stat", "key": "damage_mult", "value": 0.08, "label": "⚔️ Damage +8%", "desc": "Significant damage boost to all weapons", "rarity": "uncommon"},
-	{"type": "stat", "key": "attack_speed_mult", "value": 0.10, "label": "⚡ Attack Speed +10%", "desc": "All weapons fire faster", "rarity": "common"},
-	{"type": "stat", "key": "attack_speed_mult", "value": 0.18, "label": "⚡ Attack Speed +18%", "desc": "Major fire rate increase", "rarity": "uncommon"},
+	{"type": "stat", "key": "attack_speed_mult", "value": 0.05, "label": "⚡ Attack Speed +5%", "desc": "All weapons fire faster", "rarity": "common"},
+	{"type": "stat", "key": "attack_speed_mult", "value": 0.10, "label": "⚡ Attack Speed +10%", "desc": "Major fire rate increase", "rarity": "uncommon"},
 	{"type": "stat", "key": "crit_chance", "value": 0.03, "label": "🎯 Crit Chance +3%", "desc": "Higher chance for critical hits", "rarity": "common"},
 	{"type": "stat", "key": "crit_chance", "value": 0.07, "label": "🎯 Crit Chance +7%", "desc": "Much higher critical hit chance", "rarity": "rare"},
 	{"type": "stat", "key": "crit_damage", "value": 0.15, "label": "💥 Crit Damage +15%", "desc": "Critical hits deal more damage", "rarity": "uncommon"},
@@ -50,8 +50,8 @@ var upgrade_options: Array = [
 	# ==================== PISTOL UPGRADES (HEAVILY NERFED) ====================
 	{"type": "weapon", "weapon": "pistol", "key": "damage", "value": 1.5, "label": "🔫 Pistol: +1.5 Damage", "desc": "More damage per shot", "rarity": "common"},
 	{"type": "weapon", "weapon": "pistol", "key": "damage", "value": 2.5, "label": "🔫 Pistol: +2.5 Damage", "desc": "Major damage increase", "rarity": "uncommon"},
-	{"type": "weapon", "weapon": "pistol", "key": "attack_speed", "value": 0.10, "label": "🔫 Pistol: +10% Fire Rate", "desc": "Shoot faster", "rarity": "common"},
-	{"type": "weapon", "weapon": "pistol", "key": "attack_speed", "value": 0.20, "label": "🔫 Pistol: +20% Fire Rate", "desc": "Rapid fire mode", "rarity": "uncommon"},
+	{"type": "weapon", "weapon": "pistol", "key": "attack_speed", "value": 0.08, "label": "🔫 Pistol: +8% Fire Rate", "desc": "Shoot faster", "rarity": "common"},
+	{"type": "weapon", "weapon": "pistol", "key": "attack_speed", "value": 0.15, "label": "🔫 Pistol: +15% Fire Rate", "desc": "Rapid fire mode", "rarity": "uncommon"},
 	{"type": "weapon", "weapon": "pistol", "key": "pierce", "value": 1, "label": "🔫 Pistol: +1 Pierce", "desc": "Bullets pass through enemies", "rarity": "rare"},
 	{"type": "weapon", "weapon": "pistol", "key": "projectiles", "value": 1, "label": "🔫 Pistol: +1 Projectile", "desc": "Fire an extra bullet", "rarity": "rare"},
 	
@@ -59,7 +59,7 @@ var upgrade_options: Array = [
 	{"type": "weapon", "weapon": "shotgun", "key": "damage", "value": 1.5, "label": "💥 Shotgun: +1.5 Damage", "desc": "Each pellet hits harder", "rarity": "common"},
 	{"type": "weapon", "weapon": "shotgun", "key": "damage", "value": 2.5, "label": "💥 Shotgun: +2.5 Damage", "desc": "Devastating pellet damage", "rarity": "uncommon"},
 	{"type": "weapon", "weapon": "shotgun", "key": "projectiles", "value": 2, "label": "💥 Shotgun: +2 Pellets", "desc": "Fire more pellets per shot", "rarity": "uncommon"},
-	{"type": "weapon", "weapon": "shotgun", "key": "attack_speed", "value": 0.20, "label": "💥 Shotgun: +20% Fire Rate", "desc": "Faster between shots", "rarity": "common"},
+	{"type": "weapon", "weapon": "shotgun", "key": "attack_speed", "value": 0.12, "label": "💥 Shotgun: +12% Fire Rate", "desc": "Faster between shots", "rarity": "common"},
 	{"type": "weapon", "weapon": "shotgun", "key": "pierce", "value": 1, "label": "💥 Shotgun: +1 Pierce", "desc": "Pellets pass through enemies", "rarity": "rare"},
 	{"type": "weapon", "weapon": "shotgun", "key": "knockback", "value": 30, "label": "💥 Shotgun: +30 Knockback", "desc": "Blast enemies away", "rarity": "uncommon"},
 	
@@ -68,7 +68,7 @@ var upgrade_options: Array = [
 	{"type": "weapon", "weapon": "grenade", "key": "damage", "value": 15, "label": "💣 Grenade: +15 Damage", "desc": "Massive explosion damage", "rarity": "uncommon"},
 	{"type": "weapon", "weapon": "grenade", "key": "aoe", "value": 20, "label": "💣 Grenade: +20 Blast Radius", "desc": "Larger explosion area", "rarity": "uncommon"},
 	{"type": "weapon", "weapon": "grenade", "key": "aoe", "value": 40, "label": "💣 Grenade: +40 Blast Radius", "desc": "Huge explosion radius", "rarity": "rare"},
-	{"type": "weapon", "weapon": "grenade", "key": "attack_speed", "value": 0.20, "label": "💣 Grenade: +20% Throw Speed", "desc": "Throw grenades faster", "rarity": "common"},
+	{"type": "weapon", "weapon": "grenade", "key": "attack_speed", "value": 0.12, "label": "💣 Grenade: +12% Throw Speed", "desc": "Throw grenades faster", "rarity": "common"},
 	{"type": "weapon", "weapon": "grenade", "key": "projectiles", "value": 1, "label": "💣 Grenade: +1 Grenade", "desc": "Throw multiple grenades", "rarity": "legendary"},
 	
 	# ==================== AURA UPGRADES ====================
@@ -77,7 +77,7 @@ var upgrade_options: Array = [
 	{"type": "weapon", "weapon": "aura", "key": "damage", "value": 10, "label": "☢️ Aura: +10 Damage", "desc": "Devastating radiation field", "rarity": "rare"},
 	{"type": "weapon", "weapon": "aura", "key": "aoe", "value": 25, "label": "☢️ Aura: +25 Radius", "desc": "Larger damage field", "rarity": "uncommon"},
 	{"type": "weapon", "weapon": "aura", "key": "aoe", "value": 50, "label": "☢️ Aura: +50 Radius", "desc": "Massive damage field", "rarity": "rare"},
-	{"type": "weapon", "weapon": "aura", "key": "attack_speed", "value": 0.25, "label": "☢️ Aura: +25% Tick Rate", "desc": "Damage enemies more frequently", "rarity": "uncommon"},
+	{"type": "weapon", "weapon": "aura", "key": "attack_speed", "value": 0.15, "label": "☢️ Aura: +15% Tick Rate", "desc": "Damage enemies more frequently", "rarity": "uncommon"},
 ]
 
 # UI Nodes - now using correct paths from the scene
