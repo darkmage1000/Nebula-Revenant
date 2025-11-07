@@ -220,6 +220,19 @@ func _on_save_pressed():
 
 func _on_main_menu_pressed():
 	print("🏠 Returning to main menu...")
+	# Save run progress before quitting
+	if has_node("/root/SaveManager") and is_instance_valid(player):
+		var save_manager = get_node("/root/SaveManager")
+		# Update one last time with current stats
+		save_manager.update_run_stats(
+			player.run_stats.get("shards_collected", 0),
+			player.player_stats.get("level", 1),
+			main_game.game_time if main_game else 0.0,
+			main_game.enemies_killed if main_game else 0
+		)
+		# End the run and save shards to bank
+		save_manager.end_run()
+		print("💾 Run progress saved before quitting")
 	# Disable ALL processing immediately
 	set_process_input(false)
 	set_process(false)
@@ -230,6 +243,19 @@ func _on_main_menu_pressed():
 
 func _on_quit_pressed():
 	print("🚪 Quitting game...")
+	# Save run progress before quitting
+	if has_node("/root/SaveManager") and is_instance_valid(player):
+		var save_manager = get_node("/root/SaveManager")
+		# Update one last time with current stats
+		save_manager.update_run_stats(
+			player.run_stats.get("shards_collected", 0),
+			player.player_stats.get("level", 1),
+			main_game.game_time if main_game else 0.0,
+			main_game.enemies_killed if main_game else 0
+		)
+		# End the run and save shards to bank
+		save_manager.end_run()
+		print("💾 Run progress saved before quitting")
 	# Disable processing
 	set_process_input(false)
 	set_process(false)
