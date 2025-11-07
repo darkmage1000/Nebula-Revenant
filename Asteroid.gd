@@ -13,7 +13,6 @@ const DROP_POWERUP_CHANCE = 0.05  # 5% drop powerup
 
 # Try to preload scenes (may not exist)
 var NEBULA_SHARD_SCENE = null
-const FLOATING_DMG_SCENE = preload("res://FloatingDmg.tscn")
 
 var rotation_speed: float = 0.0
 
@@ -48,39 +47,15 @@ func _process(delta):
 
 func take_damage(amount: float, _is_dot: bool = false, _is_crit: bool = false):
 	health -= amount
-	
-	# Show damage number
-	show_damage_number(amount)
-	
+
 	# Visual feedback - flash white
 	modulate = Color(1.5, 1.5, 1.5, 1)
 	await get_tree().create_timer(0.1).timeout
 	if is_instance_valid(self):
 		modulate = Color(1, 1, 1, 1)
-	
+
 	if health <= 0:
 		explode()
-
-func show_damage_number(amount: float):
-	if not FLOATING_DMG_SCENE:
-		return
-
-	var dmg = FLOATING_DMG_SCENE.instantiate()
-	var ui_layer = get_tree().root.get_node_or_null("MainGame/UILayer")
-	if ui_layer:
-		ui_layer.add_child(dmg)
-		# Convert world position to screen position for CanvasLayer
-		var viewport = get_viewport()
-		if viewport:
-			var canvas_transform = viewport.get_canvas_transform()
-			var screen_pos = canvas_transform * global_position
-			dmg.global_position = screen_pos
-	else:
-		get_parent().add_child(dmg)
-		dmg.global_position = global_position
-
-	if dmg.has_method("set_damage_text"):
-		dmg.set_damage_text(amount, Color(0.8, 0.8, 0.8))
 
 func explode():
 	# Drop loot
