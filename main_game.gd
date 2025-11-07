@@ -65,10 +65,16 @@ var current_enemy_count: int = 0
 func _ready() -> void:
 	if player and player.has_signal("health_depleted"):
 		player.health_depleted.connect(_on_player_death)
-	
+
 	# Create HUD - use call_deferred to ensure player is ready
 	call_deferred("setup_hud")
-	
+
+	# Start tracking this run for save system
+	if has_node("/root/SaveManager"):
+		var save_manager = get_node("/root/SaveManager")
+		save_manager.start_new_run()
+		print("💾 Save system: Run tracking started")
+
 	print("=== NEBULA REVENANT STARTED ===")
 	print("Spawn rate: %.2f seconds" % spawn_rate)
 	print("First boss at: 2:30")
@@ -105,16 +111,30 @@ func open_pause_menu():
 # 6. MAIN LOOP
 # ------------------------------------------------------------------
 var spawn_timer: float = 0.0
+var save_update_timer: float = 0.0
 func _process(delta: float) -> void:
 	# Don't update when paused
 	if get_tree().paused:
 		return
-	
+
 	# Safety check
 	if not is_instance_valid(player):
 		return
-		
+
 	game_time += delta
+
+	# Update save manager with current run stats every 5 seconds
+	save_update_timer += delta
+	if save_update_timer >= 5.0:
+		save_update_timer = 0.0
+		if has_node("/root/SaveManager") and is_instance_valid(player):
+			var save_manager = get_node("/root/SaveManager")
+			save_manager.update_run_stats(
+				player.run_stats.shards_collected,
+				player.player_stats.level,
+				game_time,
+				enemies_killed
+			)
 
 	# 90-SEC TANKIER + FASTER (was 2 min)
 	if fmod(game_time, TANKIER_INTERVAL) < delta:
