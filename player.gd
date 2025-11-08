@@ -118,7 +118,7 @@ var weapon_upgrade_paths = {
 # ==============================================================
 @onready var hurt_box = $HurtBox
 @onready var pickup_radius = $PickupRadius
-@onready var sprite = $Sprite2D
+@onready var sprite = $HappyBoo  # Fixed: Actual sprite node name in player.tscn
 
 # ==============================================================
 # 6. _READY
