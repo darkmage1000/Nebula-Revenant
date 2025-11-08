@@ -13,20 +13,27 @@ var main_game: Node2D = null
 func _ready():
 	# Make sure we're visible
 	visible = true
-	
+
+	# CRITICAL: Set process mode to ALWAYS so buttons work while paused
+	process_mode = Node.PROCESS_MODE_ALWAYS
+
 	# Connect buttons
 	if resume_button:
 		resume_button.pressed.connect(_on_resume_pressed)
+		resume_button.process_mode = Node.PROCESS_MODE_ALWAYS
 	if save_button:
 		save_button.pressed.connect(_on_save_pressed)
+		save_button.process_mode = Node.PROCESS_MODE_ALWAYS
 	if main_menu_button:
 		main_menu_button.pressed.connect(_on_main_menu_pressed)
+		main_menu_button.process_mode = Node.PROCESS_MODE_ALWAYS
 	if quit_button:
 		quit_button.pressed.connect(_on_quit_pressed)
-	
+		quit_button.process_mode = Node.PROCESS_MODE_ALWAYS
+
 	# Update stats
 	call_deferred("update_stats")
-	
+
 	print("✅ Pause menu loaded!")
 
 func _input(event):
