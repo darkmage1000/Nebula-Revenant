@@ -338,8 +338,8 @@ func _on_sword_attack():
 			
 			# Apply knockback
 			if enemy.has_method("apply_knockback"):
-				var knockback_dir = (enemy.global_position - global_position).normalized()
-				enemy.apply_knockback(knockback_dir * data.knockback)
+				# apply_knockback expects (knockback_amount: float, source_position: Vector2)
+				enemy.apply_knockback(data.knockback, global_position)
 			
 			hits += 1
 	
