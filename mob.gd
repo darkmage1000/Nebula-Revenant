@@ -124,15 +124,15 @@ func take_damage(amount: float, is_dot: bool = false, is_crit: bool = false):
 		vial.value = xp_value
 		get_parent().add_child(vial)
 
-		# 10% chance to drop something (shards, health pack, or powerup)
-		if randf() < 0.10:
+		# 30% chance to drop something (shards, health pack, or powerup) - GREATLY INCREASED!
+		if randf() < 0.30:
 			var drop_roll = randf()
 			var drop_pos = global_position + Vector2(randf_range(-20, 20), randf_range(-20, 20))
 
-			if drop_roll < 0.75:
-				# Drop shards (75% of drops = 7.5% overall) - INCREASED!
+			if drop_roll < 0.80:
+				# Drop shards (80% of drops = 24% overall) - MUCH MORE COMMON!
 				var shard_value = 1
-				if randf() < 0.1:  # 10% chance for bonus shard
+				if randf() < 0.15:  # 15% chance for bonus shard (increased from 10%)
 					shard_value = randi_range(2, 5)
 
 				if ResourceLoader.exists("res://NebulaShard.tscn"):
@@ -145,12 +145,12 @@ func take_damage(amount: float, is_dot: bool = false, is_crit: bool = false):
 							shard.global_position = drop_pos
 							get_parent().add_child(shard)
 
-			elif drop_roll < 0.85:
-				# Drop health pack (10% of drops = 1% overall) - LOWEST! Was 3.3%
+			elif drop_roll < 0.90:
+				# Drop health pack (10% of drops = 3% overall)
 				spawn_healthpack(drop_pos)
 
 			else:
-				# Drop powerup (15% of drops = 1.5% overall) - NERFED! Was 3.3%
+				# Drop powerup (10% of drops = 3% overall)
 				spawn_powerup(drop_pos)
 
 		queue_free()

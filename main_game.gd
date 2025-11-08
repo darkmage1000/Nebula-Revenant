@@ -106,6 +106,16 @@ func setup_hud():
 		ui_layer.add_child(item_ui)
 		print("✅ Item inventory UI created")
 
+	# Create nebula shard UI (shows total + run shards)
+	if ResourceLoader.exists("res://NebulaShardUI.gd"):
+		var shard_ui_script = load("res://NebulaShardUI.gd")
+		var shard_ui = Control.new()
+		shard_ui.set_script(shard_ui_script)
+		shard_ui.set("player", player)
+		shard_ui.position = Vector2(10, 120)  # Position below health bar
+		ui_layer.add_child(shard_ui)
+		print("✅ Nebula shard UI created")
+
 func _input(event: InputEvent) -> void:
 	# Pause menu with ESC
 	if event.is_action_pressed("ui_cancel") and not is_level_up_open:

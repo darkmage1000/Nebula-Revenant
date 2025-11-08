@@ -128,19 +128,29 @@ func update_run_stats(shards: int = -1, level: int = -1, time: float = -1, kills
 func end_run():
 	if not current_run_active:
 		return
-	
+
 	current_run_active = false
-	
+
 	# Stop auto-save timer
 	var timer = get_node_or_null("AutoSaveTimer")
 	if timer:
 		timer.stop()
-	
+
+	# CRITICAL FIX: Record run stats BEFORE ending (for Swordmaiden unlock tracking)
+	var run_data = {
+		"level": current_run_level,
+		"time_survived": current_run_time,
+		"kills": current_run_kills,
+		"shards": current_run_shards
+	}
+	record_run_stats(run_data)
+	print("📊 Run stats recorded: Level %d, Time %.1fs, Kills %d" % [current_run_level, current_run_time, current_run_kills])
+
 	# Add any collected shards to bank
 	if current_run_shards > 0:
 		add_shards(current_run_shards)
 		print("💰 Run ended: %d shards added to bank" % current_run_shards)
-	
+
 	print("🏁 Run ended - final save complete")
 
 # Manual save button (for pause menu)
