@@ -69,8 +69,8 @@ var upgrade_options: Array = [
 	# ==================== GRENADE UPGRADES ====================
 	{"type": "weapon", "weapon": "grenade", "key": "damage", "value": 8, "label": "💣 Grenade: +8 Damage", "desc": "Bigger explosions", "rarity": "common"},
 	{"type": "weapon", "weapon": "grenade", "key": "damage", "value": 15, "label": "💣 Grenade: +15 Damage", "desc": "Massive explosion damage", "rarity": "uncommon"},
-	{"type": "weapon", "weapon": "grenade", "key": "aoe", "value": 20, "label": "💣 Grenade: +20 Blast Radius", "desc": "Larger explosion area", "rarity": "uncommon"},
-	{"type": "weapon", "weapon": "grenade", "key": "aoe", "value": 40, "label": "💣 Grenade: +40 Blast Radius", "desc": "Huge explosion radius", "rarity": "rare"},
+	{"type": "weapon", "weapon": "grenade", "key": "aoe", "value": 10, "label": "💣 Grenade: +10 Blast Radius", "desc": "Larger explosion area", "rarity": "uncommon"},
+	{"type": "weapon", "weapon": "grenade", "key": "aoe", "value": 15, "label": "💣 Grenade: +15 Blast Radius", "desc": "Bigger explosion radius", "rarity": "rare"},
 	{"type": "weapon", "weapon": "grenade", "key": "attack_speed", "value": 0.12, "label": "💣 Grenade: +12% Throw Speed", "desc": "Throw grenades faster", "rarity": "common"},
 	{"type": "weapon", "weapon": "grenade", "key": "projectiles", "value": 1, "label": "💣 Grenade: +1 Grenade", "desc": "Throw multiple grenades", "rarity": "legendary"},
 	
