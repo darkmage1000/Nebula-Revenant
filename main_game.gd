@@ -103,6 +103,7 @@ func setup_hud():
 	if ITEM_INVENTORY_UI_SCENE:
 		var item_ui = ITEM_INVENTORY_UI_SCENE.instantiate()
 		item_ui.main_game = self
+		item_ui.position = Vector2(10, 240)  # Position below nebula shard UI
 		ui_layer.add_child(item_ui)
 		print("✅ Item inventory UI created")
 
