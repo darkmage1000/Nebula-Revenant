@@ -7,8 +7,7 @@ var last_total_shards: int = -1
 var last_run_shards: int = -1
 
 @onready var total_label: Label = null
-@ontml:parameter>
-<parameter name="run_label">: Label = null
+@onready var run_label: Label = null
 
 func _ready():
 	# Get SaveManager reference
