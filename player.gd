@@ -307,14 +307,18 @@ func _on_sword_attack():
 	var sword_damage = data.damage * player_stats.damage_mult
 	var sword_aoe = data.aoe
 	
-	# Find enemies in melee range
-	var enemies = get_tree().get_nodes_in_group("mob")
+	# Find enemies in melee range (mobs, bosses, and asteroids)
 	var hit_enemies = []
-	
-	for enemy in enemies:
+
+	# Get all targetable enemies
+	var mobs = get_tree().get_nodes_in_group("mob")
+	var asteroids = get_tree().get_nodes_in_group("asteroid")
+	var all_targets = mobs + asteroids
+
+	for enemy in all_targets:
 		if not is_instance_valid(enemy):
 			continue
-			
+
 		var dist = global_position.distance_to(enemy.global_position)
 		if dist <= sword_range:
 			hit_enemies.append(enemy)
@@ -671,7 +675,7 @@ func set_character(char_type: String):
 	if sprite and char_type == "swordmaiden":
 		if ResourceLoader.exists("res://female hero.png"):
 			sprite.texture = load("res://female hero.png")
-			sprite.scale = Vector2(1.5, 1.5)
+			sprite.scale = Vector2(0.35, 0.35)  # Match Ranger's size (~0.33)
 			print("✅ Sword Maiden sprite loaded successfully!")
 		else:
 			print("⚠️ WARNING: 'female hero.png' not found!")
