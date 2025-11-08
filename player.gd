@@ -671,7 +671,7 @@ func set_character(char_type: String):
 	if sprite and char_type == "swordmaiden":
 		if ResourceLoader.exists("res://female hero.png"):
 			sprite.texture = load("res://female hero.png")
-			sprite.scale = Vector2(1.5, 1.5)
+			sprite.scale = Vector2(0.35, 0.35)  # Match Ranger's size (~0.33)
 			print("✅ Sword Maiden sprite loaded successfully!")
 		else:
 			print("⚠️ WARNING: 'female hero.png' not found!")
