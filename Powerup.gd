@@ -10,9 +10,9 @@ var collected: bool = false
 # Sprite mapping
 var sprite_map = {
 	"magnet": "res://magnet.png",
-	"nuke": "res://nuke.png",
+	"nuke": "res://grenade.png",  # Use grenade for nuke
 	"attack_speed": "res://rapidfire.png",
-	"invincible": "res://gem.png"  # Use gem as placeholder for invincible
+	"invincible": "res://gem.png"  # Yellow gem for invincible
 }
 
 # Color mapping for glow effects
