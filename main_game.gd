@@ -47,7 +47,7 @@ const MAX_SPAWN_ATTEMPTS      = 30
 # ------------------------------------------------------------------
 var is_level_up_open: bool = false
 var game_time: float = 0.0
-var spawn_rate: float = 1.8          # BALANCED! Not too fast, not too slow
+var spawn_rate: float = 2.5          # SLOWED DOWN - was 1.8, now 2.5 for slower progression
 var difficulty_mult: float = 1.0
 
 const TANKIER_INTERVAL = 90.0        # Every 90 seconds (was 120)
@@ -169,7 +169,7 @@ func _process(delta: float) -> void:
 	# 90-SEC TANKIER + FASTER (was 2 min)
 	if fmod(game_time, TANKIER_INTERVAL) < delta:
 		difficulty_mult += 1.0  # INCREASED! Was 0.5, now 1.0 per interval for more challenge
-		spawn_rate = max(0.3, spawn_rate * 0.70)  # FASTER RAMP! Was 0.85, now 0.70 for aggressive scaling
+		spawn_rate = max(0.5, spawn_rate * 0.88)  # SLOWER RAMP! Was 0.70, now 0.88 to slow leveling progression
 		print("⚡ DIFFICULTY UP! HP×%.1f | Spawn: %.2fs" % [difficulty_mult, spawn_rate])
 
 	# FIRST BOSS @ 2:30 (for testing)
@@ -197,20 +197,20 @@ func _process(delta: float) -> void:
 		spawn_timer = 0.0
 		spawn_mob()
 
-		# After 2 minutes, also spawn void mites!
-		if game_time >= 120.0:
+		# After 2 minutes, occasionally spawn void mites (50% chance, was 100%)
+		if game_time >= 120.0 and randf() < 0.50:
 			spawn_void_mite()
 
-		# Spawn asteroids occasionally (30% chance per spawn cycle)
-		if randf() < 0.30:
+		# Spawn asteroids occasionally (20% chance, was 30%)
+		if randf() < 0.20:
 			spawn_asteroid()
 
-		# After 6 minutes, occasionally spawn Nebulith Colossus (20% chance)
-		if game_time >= 360.0 and randf() < 0.20:
+		# After 6 minutes, occasionally spawn Nebulith Colossus (10% chance, was 20%)
+		if game_time >= 360.0 and randf() < 0.10:
 			spawn_colossus()
 
-		# After 6 minutes, occasionally spawn Dark Mage (15% chance)
-		if game_time >= 360.0 and randf() < 0.15:
+		# After 6 minutes, occasionally spawn Dark Mage (8% chance, was 15%)
+		if game_time >= 360.0 and randf() < 0.08:
 			spawn_dark_mage()
 
 # ------------------------------------------------------------------
@@ -224,12 +224,12 @@ func spawn_mob() -> void:
 	if current_enemy_count >= MAX_ENEMIES_ON_SCREEN:
 		return
 	
-	# BALANCED: Start with 1-2 enemies, gradually increase
-	var enemies_to_spawn = randi_range(1, 2)  # Start with 1-2 for action
-	if game_time > 180:  # After 3 minutes, spawn 2 enemies
+	# REDUCED: Fewer enemies per spawn to slow progression
+	var enemies_to_spawn = 1  # Start with 1 enemy for slower pace
+	if game_time > 180:  # After 3 minutes, spawn 1-2 enemies
+		enemies_to_spawn = randi_range(1, 2)
+	if game_time > 600:  # After 10 minutes, spawn 2 enemies (was 6 min for 2-3)
 		enemies_to_spawn = 2
-	if game_time > 360:  # After 6 minutes, spawn 2-3 enemies
-		enemies_to_spawn = randi_range(2, 3)
 	
 	for i in range(enemies_to_spawn):
 		if current_enemy_count < MAX_ENEMIES_ON_SCREEN:
