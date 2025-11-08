@@ -226,6 +226,10 @@ var selected_item: Dictionary = {}
 var is_opened: bool = false
 var rolled_rarity: String = ""
 
+# Store tween references so we can properly clean them up
+var bob_tween: Tween = null
+var glow_tween: Tween = null
+
 @onready var sprite = $Sprite2D
 @onready var glow = $Glow
 
@@ -268,14 +272,14 @@ func update_chest_visual():
 
 func animate_chest():
 	# Bobbing animation
-	var tween = create_tween()
-	tween.set_loops()
-	tween.tween_property(self, "position:y", position.y - 10, 1.0)
-	tween.tween_property(self, "position:y", position.y, 1.0)
+	bob_tween = create_tween()
+	bob_tween.set_loops()
+	bob_tween.tween_property(self, "position:y", position.y - 10, 1.0)
+	bob_tween.tween_property(self, "position:y", position.y, 1.0)
 
 	# Glow pulse
 	if is_instance_valid(glow):
-		var glow_tween = create_tween()
+		glow_tween = create_tween()
 		glow_tween.set_loops()
 		glow_tween.tween_property(glow, "scale", Vector2(1.2, 1.2), 0.8)
 		glow_tween.tween_property(glow, "scale", Vector2(1.0, 1.0), 0.8)
@@ -412,10 +416,14 @@ func apply_item_to_player():
 		print("✨ Applied item (unnamed)")
 
 func play_open_animation():
-	# Stop all existing tweens first to prevent conflicts
-	var tree = get_tree()
-	if tree:
-		tree.create_tween().kill()
+	# CRITICAL: Stop the looping animation tweens first to prevent crash
+	if bob_tween and bob_tween.is_valid():
+		bob_tween.kill()
+		bob_tween = null
+
+	if glow_tween and glow_tween.is_valid():
+		glow_tween.kill()
+		glow_tween = null
 
 	# Disconnect all signals to prevent issues during cleanup
 	if body_entered.is_connected(_on_body_entered):
