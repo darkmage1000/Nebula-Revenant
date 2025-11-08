@@ -10,7 +10,12 @@ var save_manager = null
 
 func _ready():
 	print("=== MainMenu _ready() called ===")
-	
+
+	# CRITICAL: Always unpause when entering main menu
+	# (Game may be paused from death screen, pause menu, etc.)
+	get_tree().paused = false
+	print("✅ Game unpaused")
+
 	# Get SaveManager reference
 	if has_node("/root/SaveManager"):
 		save_manager = get_node("/root/SaveManager")
