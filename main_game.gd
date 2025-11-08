@@ -50,9 +50,9 @@ var first_boss_spawned: bool = false
 const MAX_ENEMIES_ON_SCREEN = 300
 var current_enemy_count: int = 0
 
-# MAP SIZE
-const MAP_WIDTH = 5000
-const MAP_HEIGHT = 5000
+# MAP SIZE - Increased for more exploration space
+const MAP_WIDTH = 30000
+const MAP_HEIGHT = 30000
 
 func _ready() -> void:
 	print("=== MAIN GAME _ready() called ===")
@@ -61,21 +61,9 @@ func _ready() -> void:
 	# CRITICAL: Set player character BEFORE anything else
 	if player and player.has_method("set_character"):
 		player.set_character(selected_character)
-		print("✅ Player character set to: %s" % selected_character)
-		
-		# Update sprite immediately
-		if player.has_node("Sprite2D"):
-			var sprite = player.get_node("Sprite2D")
-			if selected_character == "swordmaiden":
-				if ResourceLoader.exists("res://female hero.png"):
-					sprite.texture = load("res://female hero.png")
-					sprite.scale = Vector2(2, 2)  # Make it bigger
-					print("✅ Swordmaiden sprite loaded!")
-				else:
-					print("⚠️ female hero.png not found!")
-			else:
-				# Keep default ranger sprite
-				print("✅ Using default Ranger sprite")
+		print("✅ Main game: Character set to '%s'" % selected_character)
+	else:
+		print("⚠️ WARNING: Failed to set character! Player or set_character() not found")
 	
 	if player and player.has_signal("health_depleted"):
 		player.health_depleted.connect(_on_player_death)
