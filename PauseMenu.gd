@@ -236,7 +236,12 @@ func _on_main_menu_pressed():
 	set_process_input(false)
 	set_process(false)
 
-	# Get the main game scene and free it before changing scenes
+	# Use call_deferred to change scene after current frame completes
+	# This ensures all cleanup happens properly
+	call_deferred("_change_to_main_menu")
+
+func _change_to_main_menu():
+	# Clean up the main game scene
 	var root = get_tree().root
 	for child in root.get_children():
 		if child.name == "MainGame" or child.name.begins_with("@MainGame") or "main_game" in str(child.scene_file_path).to_lower():
@@ -245,12 +250,8 @@ func _on_main_menu_pressed():
 
 	# Free the pause menu
 	queue_free()
-	print("✅ Pause menu freed")
 
-	# Wait one frame for cleanup
-	await get_tree().process_frame
-
-	# Change to main menu
+	# Change to main menu scene
 	print("✅ Changing scene to MainMenu...")
 	var result = get_tree().change_scene_to_file("res://MainMenu.tscn")
 	if result == OK:

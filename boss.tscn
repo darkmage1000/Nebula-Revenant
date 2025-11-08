@@ -3,7 +3,7 @@
 [ext_resource type="Texture2D" uid="uid://dbbckbdnp7ag5" path="res://slime.png" id="3_o1i15"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_0bnu1"]
-radius = 20.0
+radius = 120.0
 
 [node name="CharacterBody2D" type="CharacterBody2D"]
 
