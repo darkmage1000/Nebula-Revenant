@@ -1,9 +1,10 @@
-# main_game.gd – UPDATED: FASTER SPAWNS + FIRST BOSS @ 2:30 + CRASH-PROOF + ASTEROIDS
+# main_game.gd – UPDATED: Character selection support + sprite handling
 extends Node2D
 
-# ------------------------------------------------------------------
-# 1. PRELOADS
-# ------------------------------------------------------------------
+# Character selection variable (set by character_select.gd)
+var selected_character: String = "ranger"
+
+# ... [all existing preloads and variables stay the same] ...
 const MOB_SCENE       = preload("res://mob.tscn")
 const VOID_MITE_SCENE = preload("res://VoidMite.tscn")
 const NEBULITH_COLOSSUS_SCENE = preload("res://NebulithColossus.tscn")
@@ -17,63 +18,70 @@ const MINIMAP_SCENE   = preload("res://Minimap.tscn")
 const ITEM_INVENTORY_UI_SCENE = preload("res://ItemInventoryUI.tscn")
 const PAUSE_MENU_SCENE = preload("res://PauseMenu.tscn")
 const ENEMY_HEALTH_BAR = preload("res://EnemyHealthBar.tscn")
-const GAME_OVER_SCENE = preload("res://GameOverScreen.tscn")  # PHASE 3
+const GAME_OVER_SCENE = preload("res://GameOverScreen.tscn")
 
-# ------------------------------------------------------------------
-# 2. NODES
-# ------------------------------------------------------------------
 @onready var player    = $Player
 @onready var ui_layer  = $UILayer
 
-# HUD reference
 var game_hud = null
-
-# Stats tracking
 var enemies_killed: int = 0
 var bosses_defeated: int = 0
 var boss_items_collected: Array[String] = []
-var items_collected: Array[Dictionary] = []  # Track all items with tier
+var items_collected: Array[Dictionary] = []
 
-# ------------------------------------------------------------------
-# 3. SPAWN SETTINGS – TUNABLE
-# ------------------------------------------------------------------
 const MIN_DISTANCE_FROM_PLAYER = 500.0
 const MAX_SPAWN_DISTANCE      = 1200.0
-const OFFSCREEN_BUFFER        = 200.0  # INCREASED from 100 to 200 - ensures spawns are FAR offscreen
+const OFFSCREEN_BUFFER        = 200.0
 const MAX_SPAWN_ATTEMPTS      = 30
 
-# ------------------------------------------------------------------
-# 4. GAME STATE
-# ------------------------------------------------------------------
 var is_level_up_open: bool = false
 var game_time: float = 0.0
-var spawn_rate: float = 2.5          # SLOWED DOWN - was 1.8, now 2.5 for slower progression
+var spawn_rate: float = 2.5
 var difficulty_mult: float = 1.0
 
-const TANKIER_INTERVAL = 90.0        # Every 90 seconds (was 120)
-const FIRST_BOSS_TIME  = 150.0       # 2:30 for testing (2.5 minutes)
-const BOSS_INTERVAL    = 360.0       # Every 6 minutes after first
-const APOCALYPSE_TIME  = 1800.0      # 30 minutes
+const TANKIER_INTERVAL = 90.0
+const FIRST_BOSS_TIME  = 150.0
+const BOSS_INTERVAL    = 360.0
+const APOCALYPSE_TIME  = 1800.0
 
-# Boss tracking to prevent crashes
 var boss_spawn_times: Array[float] = []
 var first_boss_spawned: bool = false
 
-# PERFORMANCE OPTIMIZATION - Enemy cap to prevent FPS drops
-const MAX_ENEMIES_ON_SCREEN = 300  # Cap at 300 enemies
+const MAX_ENEMIES_ON_SCREEN = 300
 var current_enemy_count: int = 0
 
-# ------------------------------------------------------------------
-# 5. _READY
-# ------------------------------------------------------------------
+# MAP SIZE
+const MAP_WIDTH = 5000
+const MAP_HEIGHT = 5000
+
 func _ready() -> void:
+	print("=== MAIN GAME _ready() called ===")
+	print("   Selected character: %s" % selected_character)
+	
+	# CRITICAL: Set player character BEFORE anything else
+	if player and player.has_method("set_character"):
+		player.set_character(selected_character)
+		print("✅ Player character set to: %s" % selected_character)
+		
+		# Update sprite immediately
+		if player.has_node("Sprite2D"):
+			var sprite = player.get_node("Sprite2D")
+			if selected_character == "swordmaiden":
+				if ResourceLoader.exists("res://female hero.png"):
+					sprite.texture = load("res://female hero.png")
+					sprite.scale = Vector2(2, 2)  # Make it bigger
+					print("✅ Swordmaiden sprite loaded!")
+				else:
+					print("⚠️ female hero.png not found!")
+			else:
+				# Keep default ranger sprite
+				print("✅ Using default Ranger sprite")
+	
 	if player and player.has_signal("health_depleted"):
 		player.health_depleted.connect(_on_player_death)
 
-	# Create HUD - use call_deferred to ensure player is ready
 	call_deferred("setup_hud")
 
-	# Start tracking this run for save system
 	if has_node("/root/SaveManager"):
 		var save_manager = get_node("/root/SaveManager")
 		save_manager.start_new_run()
@@ -91,7 +99,6 @@ func setup_hud():
 		add_child(game_hud)
 		print("✅ HUD created with player level: %d" % player.player_stats.level)
 
-	# Create minimap
 	if MINIMAP_SCENE and is_instance_valid(player):
 		var minimap = MINIMAP_SCENE.instantiate()
 		minimap.player = player
@@ -99,31 +106,27 @@ func setup_hud():
 		ui_layer.add_child(minimap)
 		print("✅ Minimap created")
 
-	# Create item inventory UI
 	if ITEM_INVENTORY_UI_SCENE:
 		var item_ui = ITEM_INVENTORY_UI_SCENE.instantiate()
 		item_ui.main_game = self
-		item_ui.position = Vector2(10, 240)  # Position below nebula shard UI
+		item_ui.position = Vector2(10, 240)
 		ui_layer.add_child(item_ui)
 		print("✅ Item inventory UI created")
 
-	# Create nebula shard UI (shows total + run shards)
 	if ResourceLoader.exists("res://NebulaShardUI.gd"):
 		var shard_ui_script = load("res://NebulaShardUI.gd")
 		var shard_ui = Control.new()
 		shard_ui.set_script(shard_ui_script)
 		shard_ui.set("player", player)
-		shard_ui.position = Vector2(10, 120)  # Position below health bar
+		shard_ui.position = Vector2(10, 120)
 		ui_layer.add_child(shard_ui)
 		print("✅ Nebula shard UI created")
 
 func _input(event: InputEvent) -> void:
-	# Pause menu with ESC
 	if event.is_action_pressed("ui_cancel") and not is_level_up_open:
 		if not get_tree().paused:
 			open_pause_menu()
 	
-	# Restart on death
 	if event.is_action_pressed("ui_accept") and player.player_stats.current_health <= 0:
 		get_tree().paused = false
 		get_tree().reload_current_scene()
@@ -137,23 +140,17 @@ func open_pause_menu():
 	ui_layer.add_child(pause_menu)
 	print("✅ Pause menu added to scene!")
 
-# ------------------------------------------------------------------
-# 6. MAIN LOOP
-# ------------------------------------------------------------------
 var spawn_timer: float = 0.0
 var save_update_timer: float = 0.0
 func _process(delta: float) -> void:
-	# Don't update when paused
 	if get_tree().paused:
 		return
 
-	# Safety check
 	if not is_instance_valid(player):
 		return
 
 	game_time += delta
 
-	# Update save manager with current run stats every 5 seconds
 	save_update_timer += delta
 	if save_update_timer >= 5.0:
 		save_update_timer = 0.0
@@ -166,101 +163,81 @@ func _process(delta: float) -> void:
 				enemies_killed
 			)
 
-	# 90-SEC TANKIER + FASTER (was 2 min)
 	if fmod(game_time, TANKIER_INTERVAL) < delta:
-		difficulty_mult += 1.0  # INCREASED! Was 0.5, now 1.0 per interval for more challenge
-		spawn_rate = max(0.5, spawn_rate * 0.88)  # SLOWER RAMP! Was 0.70, now 0.88 to slow leveling progression
+		difficulty_mult += 1.0
+		spawn_rate = max(0.5, spawn_rate * 0.88)
 		print("⚡ DIFFICULTY UP! HP×%.1f | Spawn: %.2fs" % [difficulty_mult, spawn_rate])
 
-	# FIRST BOSS @ 2:30 (for testing)
 	if not first_boss_spawned and game_time >= FIRST_BOSS_TIME:
 		spawn_boss()
 		first_boss_spawned = true
 		boss_spawn_times.append(game_time)
 	
-	# REGULAR BOSSES every 6 minutes after first
 	if first_boss_spawned:
 		var time_since_first = game_time - FIRST_BOSS_TIME
 		if fmod(time_since_first, BOSS_INTERVAL) < delta:
-			# Make sure we don't spawn duplicate bosses
 			if not has_boss_alive():
 				spawn_boss()
 				boss_spawn_times.append(game_time)
 
-	# 30-MIN APOCALYPSE
 	if game_time >= APOCALYPSE_TIME and not has_node("ApocalypseMob"):
 		spawn_apocalypse_mob()
 
-	# REGULAR MOB SPAWNING
 	spawn_timer += delta
 	if spawn_timer >= spawn_rate:
 		spawn_timer = 0.0
 		spawn_mob()
 
-		# After 2 minutes, occasionally spawn void mites (50% chance, was 100%)
 		if game_time >= 120.0 and randf() < 0.50:
 			spawn_void_mite()
 
-		# Spawn asteroids occasionally (20% chance, was 30%)
 		if randf() < 0.20:
 			spawn_asteroid()
 
-		# After 6 minutes, occasionally spawn Nebulith Colossus (10% chance, was 20%)
 		if game_time >= 360.0 and randf() < 0.10:
 			spawn_colossus()
 
-		# After 6 minutes, occasionally spawn Dark Mage (8% chance, was 15%)
 		if game_time >= 360.0 and randf() < 0.08:
 			spawn_dark_mage()
 
-# ------------------------------------------------------------------
-# 7. SPAWN MOB – 4-SIDE OFF-SCREEN (WITH PERFORMANCE CAP)
-# ------------------------------------------------------------------
 func spawn_mob() -> void:
 	if not is_instance_valid(player):
 		return
 	
-	# PERFORMANCE: Don't spawn if at enemy cap
 	if current_enemy_count >= MAX_ENEMIES_ON_SCREEN:
 		return
 	
-	# REDUCED: Fewer enemies per spawn to slow progression
-	var enemies_to_spawn = 1  # Start with 1 enemy for slower pace
-	if game_time > 180:  # After 3 minutes, spawn 1-2 enemies
+	var enemies_to_spawn = 1
+	if game_time > 180:
 		enemies_to_spawn = randi_range(1, 2)
-	if game_time > 600:  # After 10 minutes, spawn 2 enemies (was 6 min for 2-3)
+	if game_time > 600:
 		enemies_to_spawn = 2
 	
 	for i in range(enemies_to_spawn):
 		if current_enemy_count < MAX_ENEMIES_ON_SCREEN:
 			spawn_enemy(MOB_SCENE)
 
-# Spawn void mites (same stats, different sprite)
 func spawn_void_mite() -> void:
 	if not is_instance_valid(player):
 		return
 	spawn_enemy(VOID_MITE_SCENE)
 
-# Spawn Nebulith Colossus (tanky enemy after 6 minutes)
 func spawn_colossus() -> void:
 	if not is_instance_valid(player):
 		return
 	spawn_enemy(NEBULITH_COLOSSUS_SCENE)
 
-# Spawn Dark Mage (ranged enemy after 6 minutes)
 func spawn_dark_mage() -> void:
 	if not is_instance_valid(player):
 		return
 	spawn_enemy(DARK_MAGE_SCENE)
 
-# Spawn Asteroid (destructible space rocks with loot)
 func spawn_asteroid() -> void:
 	if not is_instance_valid(player) or not ASTEROID_SCENE:
 		return
 
 	var asteroid = ASTEROID_SCENE.instantiate()
 
-	# Calculate spawn position offscreen like mobs
 	var screen_size = get_viewport_rect().size
 	var cam_pos = player.global_position
 
@@ -272,42 +249,37 @@ func spawn_asteroid() -> void:
 	var top    = cam_pos.y - (screen_size.y * 0.5)
 	var bottom = cam_pos.y + (screen_size.y * 0.5)
 
-	# Pick random side (0=top, 1=right, 2=bottom, 3=left)
 	var side = randi() % 4
 	var spawn_pos: Vector2
 
 	match side:
-		0: # TOP
+		0:
 			spawn_pos.x = randf_range(left - total_buffer, right + total_buffer)
 			spawn_pos.y = top - total_buffer
-		1: # RIGHT
+		1:
 			spawn_pos.x = right + total_buffer
 			spawn_pos.y = randf_range(top - total_buffer, bottom + total_buffer)
-		2: # BOTTOM
+		2:
 			spawn_pos.x = randf_range(left - total_buffer, right + total_buffer)
 			spawn_pos.y = bottom + total_buffer
-		3: # LEFT
+		3:
 			spawn_pos.x = left - total_buffer
 			spawn_pos.y = randf_range(top - total_buffer, bottom + total_buffer)
 
 	asteroid.global_position = spawn_pos
 	add_child(asteroid)
 
-# Generic enemy spawner - FIXED: ALWAYS SPAWN OFFSCREEN
 func spawn_enemy(enemy_scene: PackedScene) -> void:
 	var mob = enemy_scene.instantiate()
 
-	# Apply scaling
 	mob.health      *= difficulty_mult
 	mob.max_health  *= difficulty_mult
 	mob.speed       *= (1.0 + game_time / 600.0)
 	mob.xp_value    += int(game_time / 30.0)
 
-	# Calculate spawn position COMPLETELY offscreen
 	var screen_size = get_viewport_rect().size
 	var cam_pos = player.global_position
 	
-	# Add extra padding for enemy size (enemies can be 20-40 pixels)
 	const ENEMY_SIZE_PADDING = 50.0
 	var total_buffer = OFFSCREEN_BUFFER + ENEMY_SIZE_PADDING
 	
@@ -316,70 +288,60 @@ func spawn_enemy(enemy_scene: PackedScene) -> void:
 	var top    = cam_pos.y - (screen_size.y * 0.5)
 	var bottom = cam_pos.y + (screen_size.y * 0.5)
 
-	# Pick random side (0=top, 1=right, 2=bottom, 3=left)
 	var side = randi() % 4
 	var spawn_pos: Vector2
 
 	match side:
-		0: # TOP - spawn ABOVE screen
-			spawn_pos.x = randf_range(left - total_buffer, right + total_buffer)  # Wider range
-			spawn_pos.y = top - total_buffer  # Well above screen
-		1: # RIGHT - spawn to RIGHT of screen
-			spawn_pos.x = right + total_buffer  # Well to the right
-			spawn_pos.y = randf_range(top - total_buffer, bottom + total_buffer)  # Taller range
-		2: # BOTTOM - spawn BELOW screen
-			spawn_pos.x = randf_range(left - total_buffer, right + total_buffer)  # Wider range
-			spawn_pos.y = bottom + total_buffer  # Well below screen
-		3: # LEFT - spawn to LEFT of screen
-			spawn_pos.x = left - total_buffer  # Well to the left
-			spawn_pos.y = randf_range(top - total_buffer, bottom + total_buffer)  # Taller range
+		0:
+			spawn_pos.x = randf_range(left - total_buffer, right + total_buffer)
+			spawn_pos.y = top - total_buffer
+		1:
+			spawn_pos.x = right + total_buffer
+			spawn_pos.y = randf_range(top - total_buffer, bottom + total_buffer)
+		2:
+			spawn_pos.x = randf_range(left - total_buffer, right + total_buffer)
+			spawn_pos.y = bottom + total_buffer
+		3:
+			spawn_pos.x = left - total_buffer
+			spawn_pos.y = randf_range(top - total_buffer, bottom + total_buffer)
 
 	mob.global_position = spawn_pos
 	add_child(mob)
 	
-	# PERFORMANCE: Track enemy count
 	current_enemy_count += 1
 
 	if mob.has_signal("died"):
 		mob.died.connect(_on_mob_died.bind(mob))
 	
-	# Add health bar above enemy
 	if ENEMY_HEALTH_BAR:
 		var health_bar = ENEMY_HEALTH_BAR.instantiate()
 		health_bar.set_target(mob)
 		ui_layer.add_child(health_bar)
 
-# ------------------------------------------------------------------
-# 8. BOSS & APOCALYPSE
-# ------------------------------------------------------------------
 func spawn_boss() -> void:
 	if not is_instance_valid(player):
 		print("⚠️ Cannot spawn boss: Player invalid")
 		return
 	
-	# Prevent duplicate bosses
 	if has_boss_alive():
 		print("⚠️ Boss already exists, skipping spawn")
 		return
 		
 	var boss = MOB_SCENE.instantiate()
-	boss.name = "Boss_%d" % int(game_time)  # Unique name
-	boss.add_to_group("boss")  # Add to boss group for tracking
+	boss.name = "Boss_%d" % int(game_time)
+	boss.add_to_group("boss")
 	boss.scale = Vector2(6, 6)
 	
-	# Boss stats scale with difficulty
-	boss.health = 200.0 * difficulty_mult  # Base 200 HP
+	boss.health = 200.0 * difficulty_mult
 	boss.max_health = 200.0 * difficulty_mult
 	boss.xp_value = 100
-	boss.speed = 150.0  # Slower than normal enemies
+	boss.speed = 150.0
 
-	# Spawn in CENTER of screen relative to player
 	var screen_size = get_viewport_rect().size
 	boss.global_position = player.global_position + Vector2(screen_size.x * 0.5, screen_size.y * 0.5)
 	
 	add_child(boss)
 	
-	# Connect signal safely
 	if boss.has_signal("died"):
 		boss.died.connect(_on_mob_died.bind(boss))
 	
@@ -408,7 +370,6 @@ func spawn_apocalypse_mob() -> void:
 	
 	print("💀 APOCALYPSE MOB SPAWNED!")
 
-# Check if any boss is currently alive
 func has_boss_alive() -> bool:
 	var bosses = get_tree().get_nodes_in_group("boss")
 	for boss in bosses:
@@ -416,27 +377,19 @@ func has_boss_alive() -> bool:
 			return true
 	return false
 
-# ------------------------------------------------------------------
-# 9. DEATH HANDLING
-# ------------------------------------------------------------------
 func _on_mob_died(dead_mob: Node) -> void:
 	if not is_instance_valid(dead_mob):
 		return
 	
-	# PERFORMANCE: Decrement enemy count
 	current_enemy_count = max(0, current_enemy_count - 1)
-	
-	# Track kills
 	enemies_killed += 1
 	
-	# Drop XP vial
 	if XP_VIAL_SCENE:
 		var vial = XP_VIAL_SCENE.instantiate()
 		vial.global_position = dead_mob.global_position
 		vial.value = dead_mob.xp_value
 		add_child(vial)
 
-	# Boss drops chest
 	if dead_mob.is_in_group("boss"):
 		bosses_defeated += 1
 		print("💎 BOSS DEFEATED! Dropping chest...")
@@ -448,16 +401,15 @@ func spawn_chest(pos: Vector2) -> void:
 		give_boss_buff()
 		return
 	
-	# Determine chest tier based on bosses defeated
 	var tier = "yellow"
 	if bosses_defeated == 1:
-		tier = "yellow"  # First boss = common
+		tier = "yellow"
 	elif bosses_defeated <= 3:
-		tier = "blue"  # 2-3 bosses = uncommon
+		tier = "blue"
 	elif bosses_defeated <= 6:
-		tier = "green"  # 4-6 bosses = rare
+		tier = "green"
 	else:
-		tier = "purple"  # 7+ bosses = legendary!
+		tier = "purple"
 	
 	var chest = CHEST_SCENE.instantiate()
 	chest.tier = tier
@@ -465,7 +417,6 @@ func spawn_chest(pos: Vector2) -> void:
 	add_child(chest)
 	print("📦 %s chest spawned at boss location!" % tier.to_upper())
 
-# Fallback if chest scene doesn't exist
 func give_boss_buff() -> void:
 	if not is_instance_valid(player):
 		return
@@ -489,12 +440,10 @@ func give_boss_buff() -> void:
 	
 	print("⚡ Boss buff applied: %s" % buff.name)
 
-# Called by chest.gd
 func give_chest_buff(buff_type: String) -> void:
 	if not is_instance_valid(player):
 		return
 	
-	# Track collected items
 	var buff_name = ""
 	
 	match buff_type:
@@ -518,20 +467,16 @@ func give_chest_buff(buff_type: String) -> void:
 	
 	boss_items_collected.append(buff_name)
 
-# FIXED: Show chest rarity animation with color swapping
 func show_chest_animation(item_data: Dictionary, final_rarity: String):
-	# Create the UI overlay
 	var overlay = Control.new()
 	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
 	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	
-	# Dark background
 	var bg = ColorRect.new()
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	bg.color = Color(0, 0, 0, 0.9)
 	overlay.add_child(bg)
 	
-	# Chest box
 	var box = PanelContainer.new()
 	box.position = Vector2(get_viewport().size.x / 2 - 200, get_viewport().size.y / 2 - 150)
 	box.size = Vector2(400, 300)
@@ -561,7 +506,6 @@ func show_chest_animation(item_data: Dictionary, final_rarity: String):
 	overlay.add_child(box)
 	ui_layer.add_child(overlay)
 	
-	# Color swap animation
 	var rarity_colors = {
 		"yellow": Color(1.0, 0.9, 0.3),
 		"blue": Color(0.3, 0.6, 1.0),
@@ -571,7 +515,7 @@ func show_chest_animation(item_data: Dictionary, final_rarity: String):
 	
 	var rarity_names = ["yellow", "blue", "green", "purple"]
 	var swap_count = 0
-	var max_swaps = 20  # Fast swapping for 3 seconds
+	var max_swaps = 20
 	var swap_interval = 0.15
 	
 	var swap_timer = Timer.new()
@@ -583,7 +527,6 @@ func show_chest_animation(item_data: Dictionary, final_rarity: String):
 		swap_count += 1
 		
 		if swap_count >= max_swaps:
-			# Show final result
 			var final_color = rarity_colors[final_rarity]
 			rarity_label.text = final_rarity.to_upper()
 			rarity_label.add_theme_color_override("font_color", final_color)
@@ -592,17 +535,14 @@ func show_chest_animation(item_data: Dictionary, final_rarity: String):
 			desc_label.text = item_data.description
 			swap_timer.stop()
 			
-			# Auto-close after 2 seconds and apply item
 			await get_tree().create_timer(2.0).timeout
 			
-			# Apply item to player
 			var chest_nodes = get_tree().get_nodes_in_group("chest")
 			for chest in chest_nodes:
 				if chest.has_method("apply_item_to_player"):
 					chest.apply_item_to_player()
 					break
 			
-			# Track collected item
 			items_collected.append({
 				"name": item_data.name,
 				"tier": final_rarity,
@@ -612,7 +552,6 @@ func show_chest_animation(item_data: Dictionary, final_rarity: String):
 			overlay.queue_free()
 			get_tree().paused = false
 		else:
-			# Randomly swap colors
 			var random_rarity = rarity_names[randi() % rarity_names.size()]
 			var color = rarity_colors[random_rarity]
 			rarity_label.text = random_rarity.to_upper()
@@ -622,7 +561,6 @@ func show_chest_animation(item_data: Dictionary, final_rarity: String):
 	
 	swap_timer.start()
 
-# Show item UI when chest is opened (OLD METHOD - REPLACED BY ANIMATION)
 func show_item_ui(item_data: Dictionary, tier: String):
 	if not ITEM_UI_SCENE:
 		return
@@ -631,7 +569,6 @@ func show_item_ui(item_data: Dictionary, tier: String):
 	item_ui.set_item(item_data, tier)
 	ui_layer.add_child(item_ui)
 	
-	# Track collected item
 	items_collected.append({
 		"name": item_data.name,
 		"tier": tier,
@@ -640,9 +577,6 @@ func show_item_ui(item_data: Dictionary, tier: String):
 	
 	print("✨ Collected: [%s] %s" % [tier.to_upper(), item_data.name])
 
-# ------------------------------------------------------------------
-# 10. XP + LEVEL UP
-# ------------------------------------------------------------------
 func give_xp_to_player(amount: int) -> void:
 	if player and player.has_method("pickup_xp"):
 		player.pickup_xp(amount)
@@ -660,13 +594,9 @@ func show_level_up_options() -> void:
 	if lvl_up.has_signal("upgrade_selected"):
 		lvl_up.upgrade_selected.connect(_on_level_up_upgrade_selected)
 
-# ------------------------------------------------------------------
-# 11. UPGRADE HANDLER
-# ------------------------------------------------------------------
 func _on_level_up_upgrade_selected(upgrade_data: Dictionary) -> void:
 	print("Upgrade selected: ", upgrade_data)
 	
-	# Apply upgrade
 	if upgrade_data.has("unlock_weapon"):
 		player.add_weapon(upgrade_data.unlock_weapon)
 	elif upgrade_data.has("weapon_key"):
@@ -681,30 +611,24 @@ func _on_level_up_upgrade_selected(upgrade_data: Dictionary) -> void:
 			upgrade_data.value
 		)
 	
-	# Unpause
 	is_level_up_open = false
 	get_tree().paused = false
 
-# ------------------------------------------------------------------
-# 12. DEATH + GAME OVER
-# ------------------------------------------------------------------
 func _on_player_death() -> void:
 	get_tree().paused = true
 	print("💀 GAME OVER – %.0f seconds!" % game_time)
 	print("Bosses defeated: %d" % bosses_defeated)
 	print("Enemies killed: %d" % enemies_killed)
 	
-	# PHASE 3: Show game over screen with stats
 	if GAME_OVER_SCENE and is_instance_valid(player):
 		var game_over = GAME_OVER_SCENE.instantiate()
 		var stats = player.get_run_stats()
 		game_over.set_run_stats(stats)
 		ui_layer.add_child(game_over)
 		
-		# Connect exit button
 		if game_over.has_signal("exit_to_menu"):
 			game_over.exit_to_menu.connect(_on_exit_to_menu)
 
 func _on_exit_to_menu():
 	get_tree().paused = false
-	get_tree().change_scene_to_file("res://MainMenu.tscn")  # Go to main menu
+	get_tree().change_scene_to_file("res://MainMenu.tscn")

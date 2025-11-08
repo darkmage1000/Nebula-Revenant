@@ -1,6 +1,6 @@
-[gd_scene load_steps=2 format=3 uid="uid://powerup_display_scene"]
+[gd_scene load_steps=2 format=3 uid="uid://b1pybwg6yagq3"]
 
-[ext_resource type="Script" path="res://PowerupDisplay.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://dvd0osgadf54v" path="res://PowerupDisplay.gd" id="1_script"]
 
 [node name="PowerupDisplay" type="Control"]
 custom_minimum_size = Vector2(40, 54)

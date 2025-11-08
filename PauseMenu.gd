@@ -1,4 +1,4 @@
-# PauseMenu.gd – PAUSE MENU WITH MAIN MENU OPTION
+# PauseMenu.gd – FIXED: Main menu button now works properly
 extends Control
 
 var player: CharacterBody2D = null
@@ -11,10 +11,7 @@ var main_game: Node2D = null
 @onready var quit_button = $Panel/VBoxContainer/ButtonsContainer/QuitButton
 
 func _ready():
-	# Make sure we're visible
 	visible = true
-
-	# CRITICAL: Set process mode to ALWAYS so buttons work while paused
 	process_mode = Node.PROCESS_MODE_ALWAYS
 
 	# Connect buttons
@@ -31,14 +28,11 @@ func _ready():
 		quit_button.pressed.connect(_on_quit_pressed)
 		quit_button.process_mode = Node.PROCESS_MODE_ALWAYS
 
-	# Update stats
 	call_deferred("update_stats")
-
 	print("✅ Pause menu loaded!")
 
 func _input(event):
-	# Only handle ESC if we're still processing input (not going to main menu)
-	if event.is_action_pressed("ui_cancel"):  # ESC key
+	if event.is_action_pressed("ui_cancel"):
 		_on_resume_pressed()
 		get_viewport().set_input_as_handled()
 
@@ -111,7 +105,6 @@ func update_stats():
 		for weapon_key in player.weapon_damage_dealt:
 			total_damage += player.weapon_damage_dealt[weapon_key]
 		
-		# Merge "bullet" into "pistol" for display
 		var merged_damage = {}
 		for weapon_key in player.weapon_damage_dealt:
 			var display_key = weapon_key
@@ -139,7 +132,6 @@ func update_stats():
 	stats_text += "═══════════════════════════\n"
 	stats_text += "💀 Enemies Killed: %d\n" % main_game.enemies_killed
 	stats_text += "👹 Bosses Defeated: %d\n" % main_game.bosses_defeated
-	# Check if property exists properly
 	if "current_enemy_count" in main_game:
 		stats_text += "🎯 Enemies On Screen: %d / %d\n" % [main_game.current_enemy_count, main_game.MAX_ENEMIES_ON_SCREEN]
 	
@@ -150,12 +142,10 @@ func update_stats():
 	stats_text += "    ITEMS COLLECTED     \n"
 	stats_text += "═══════════════════════════\n"
 	if main_game.items_collected.size() > 0:
-		# Group by tier
 		var by_tier = {"purple": [], "green": [], "blue": [], "yellow": []}
 		for item in main_game.items_collected:
 			by_tier[item.tier].append(item)
 		
-		# Count by tier
 		var tier_counts = {
 			"purple": by_tier["purple"].size(),
 			"green": by_tier["green"].size(),
@@ -169,7 +159,6 @@ func update_stats():
 		stats_text += "  ● Uncommon: %d\n" % tier_counts["blue"]
 		stats_text += "  ○ Common: %d\n\n" % tier_counts["yellow"]
 		
-		# Show all items with details
 		for tier in ["purple", "green", "blue", "yellow"]:
 			if by_tier[tier].size() > 0:
 				var tier_icon = {"purple": "★", "green": "◆", "blue": "●", "yellow": "○"}
@@ -183,22 +172,17 @@ func update_stats():
 	stats_text += "\n═══════════════════════════\n"
 	
 	stats_label.text = stats_text
-	print("✅ Stats updated! Lines: %d" % stats_text.count("\n"))
 
 func _on_resume_pressed():
 	print("▶️ Resuming game...")
-	# Disable input to prevent double-triggering
 	set_process_input(false)
 	set_process(false)
-	# Unpause
 	get_tree().paused = false
-	# Remove this menu
 	queue_free()
 
 func _on_save_pressed():
 	print("💾 Manual save requested...")
 	
-	# Update SaveManager with current stats
 	if has_node("/root/SaveManager") and is_instance_valid(player):
 		var save_manager = get_node("/root/SaveManager")
 		var shards = player.run_stats.get("shards_collected", 0)
@@ -209,7 +193,6 @@ func _on_save_pressed():
 		save_manager.update_run_stats(shards, level, time, kills)
 		
 		if save_manager.manual_save():
-			# Show visual feedback
 			if save_button:
 				var original_text = save_button.text
 				save_button.text = "✅ SAVED!"
@@ -226,62 +209,67 @@ func _on_save_pressed():
 		print("❌ SaveManager not found!")
 
 func _on_main_menu_pressed():
-	print("🏠 Returning to main menu...")
+	print("=== MAIN MENU BUTTON PRESSED ===")
 
-	# Disable button to prevent double-clicking
+	# Disable button immediately
 	if main_menu_button:
 		main_menu_button.disabled = true
+		print("✅ Button disabled")
 
-	# Save run progress before quitting
+	# Save run progress
 	if has_node("/root/SaveManager") and is_instance_valid(player):
 		var save_manager = get_node("/root/SaveManager")
-		# Update one last time with current stats
 		save_manager.update_run_stats(
 			player.run_stats.get("shards_collected", 0),
 			player.player_stats.get("level", 1),
 			main_game.game_time if main_game else 0.0,
 			main_game.enemies_killed if main_game else 0
 		)
-		# End the run and save shards to bank
 		save_manager.end_run()
-		print("💾 Run progress saved before quitting")
+		print("💾 Run progress saved")
 
-	# CRITICAL: Unpause FIRST
+	# CRITICAL: Unpause first
 	get_tree().paused = false
 	print("✅ Game unpaused")
-
-	# Use a one-shot timer to delay scene change (more reliable than await)
-	var timer = Timer.new()
-	timer.wait_time = 0.1  # Small delay to ensure unpause takes effect
-	timer.one_shot = true
-	timer.process_mode = Node.PROCESS_MODE_ALWAYS
-	add_child(timer)
-	timer.timeout.connect(func():
-		print("✅ Timer fired, changing scene to MainMenu...")
-		get_tree().change_scene_to_file("res://MainMenu.tscn")
-	)
-	timer.start()
-	print("✅ Timer started, will change scene in 0.1s")
+	
+	# Stop all input processing
+	set_process_input(false)
+	set_process(false)
+	
+	# Free the pause menu
+	queue_free()
+	print("✅ Pause menu freed")
+	
+	# Get the main game scene and free it
+	var root = get_tree().root
+	for child in root.get_children():
+		if child.name == "MainGame" or child.name.begins_with("@MainGame") or "main_game" in str(child.scene_file_path).to_lower():
+			print("🗑️ Freeing MainGame: ", child.name)
+			child.queue_free()
+	
+	# Wait one frame for cleanup
+	await get_tree().process_frame
+	
+	# Now change to main menu
+	print("✅ Changing scene to MainMenu...")
+	get_tree().change_scene_to_file("res://MainMenu.tscn")
+	print("✅ Scene change requested!")
 
 func _on_quit_pressed():
 	print("🚪 Quitting game...")
-	# Save run progress before quitting
+	
 	if has_node("/root/SaveManager") and is_instance_valid(player):
 		var save_manager = get_node("/root/SaveManager")
-		# Update one last time with current stats
 		save_manager.update_run_stats(
 			player.run_stats.get("shards_collected", 0),
 			player.player_stats.get("level", 1),
 			main_game.game_time if main_game else 0.0,
 			main_game.enemies_killed if main_game else 0
 		)
-		# End the run and save shards to bank
 		save_manager.end_run()
 		print("💾 Run progress saved before quitting")
-	# Disable processing
+	
 	set_process_input(false)
 	set_process(false)
-	# Unpause before quitting
 	get_tree().paused = false
-	# Quit
 	get_tree().quit()
