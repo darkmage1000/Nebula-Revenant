@@ -66,7 +66,7 @@ func setup_swordmaiden_panel():
 		if unlock_button:
 			unlock_button.visible = true
 			unlock_button.disabled = false
-			unlock_button.text = "Unlock (5000 Shards)"
+			unlock_button.text = "Unlock (500 Shards)"
 			unlock_button.pressed.connect(_on_unlock_pressed)
 		if locked_label:
 			locked_label.visible = false
@@ -110,8 +110,8 @@ func _on_unlock_pressed():
 	
 	var current_shards = save_manager.get_shards()
 	
-	if current_shards < 5000:
-		update_info_label("❌ Not enough shards! Need 5000, have %d" % current_shards)
+	if current_shards < 500:
+		update_info_label("❌ Not enough shards! Need 500, have %d" % current_shards)
 		return
 	
 	if save_manager.try_unlock_swordmaiden():

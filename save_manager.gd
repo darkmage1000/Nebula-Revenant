@@ -68,10 +68,13 @@ func save_game():
 		var json_string = JSON.stringify(save_data, "\t")
 		file.store_string(json_string)
 		file.close()
-		print("💾 Game saved!")
+		print("💾 Game saved to: %s" % SAVE_PATH)
+		print("💾 Swordmaiden unlocked: %s" % str(save_data.unlocks.get("swordmaiden_unlocked", false)))
 		return true
 	else:
-		print("❌ Failed to save game!")
+		print("❌ Failed to save game to: %s" % SAVE_PATH)
+		var error = FileAccess.get_open_error()
+		print("❌ Error code: %d" % error)
 		return false
 
 # ==============================================================
@@ -260,19 +263,29 @@ func try_unlock_swordmaiden() -> bool:
 	if not is_swordmaiden_challenge_complete():
 		print("❌ Challenge not complete! Reach level 30 first.")
 		return false
-	
+
 	# Must have enough shards
-	if save_data.total_shards < 5000:
-		print("❌ Not enough shards! Need 5000, have %d" % save_data.total_shards)
+	if save_data.total_shards < 500:
+		print("❌ Not enough shards! Need 500, have %d" % save_data.total_shards)
 		return false
-	
+
 	# Purchase!
-	if spend_shards(5000):
+	if spend_shards(500):
+		print("💰 Spent 500 shards for Swordmaiden unlock")
 		save_data.unlocks.swordmaiden_unlocked = true
-		save_game()
-		print("🗡️ SWORDMAIDEN UNLOCKED!")
-		return true
-	
+
+		# CRITICAL: Save immediately and verify it worked
+		if save_game():
+			print("🗡️ SWORDMAIDEN UNLOCKED AND SAVED!")
+			print("✅ Unlock permanently saved to disk")
+			return true
+		else:
+			print("❌ ERROR: Failed to save unlock! Reverting...")
+			# Revert the unlock if save failed
+			save_data.unlocks.swordmaiden_unlocked = false
+			add_shards(500)  # Refund the shards
+			return false
+
 	return false
 
 # Update challenge progress
@@ -288,7 +301,7 @@ func update_swordmaiden_challenge(level: int):
 		save_game()
 		
 		if level >= 30 and not save_data.unlocks.swordmaiden_unlocked:
-			print("🏆 CHALLENGE COMPLETE! Swordmaiden can now be purchased for 5000 shards!")
+			print("🏆 CHALLENGE COMPLETE! Swordmaiden can now be purchased for 500 shards!")
 
 # ==============================================================
 # ORIGINAL FUNCTIONS
