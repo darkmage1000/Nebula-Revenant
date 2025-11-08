@@ -348,31 +348,75 @@ func _on_sword_attack():
 		create_slash_effect()
 
 func create_slash_effect():
-	# Simple pink energy slash visual
+	# Get sword range from weapon data
+	var sword_range = weapon_data["sword"].distance if weapon_data.has("sword") else 100
+	var sword_aoe = weapon_data["sword"].aoe if weapon_data.has("sword") else 80
+
+	# Create pink energy slash visual
 	var slash = Node2D.new()
 	slash.global_position = global_position
 	get_parent().add_child(slash)
-	
+
+	# Create visual slash arc using Polygon2D
+	var slash_visual = Polygon2D.new()
+	slash_visual.color = Color(1, 0.4, 0.8, 0.7)  # Bright pink energy
+
+	# Create arc shape representing sword slash range
+	var arc_points = PackedVector2Array()
+	var num_points = 20
+	var start_angle = -PI/4  # 45 degrees left
+	var end_angle = PI/4      # 45 degrees right
+
+	# Add center point
+	arc_points.append(Vector2.ZERO)
+
+	# Add arc points at sword range
+	for i in range(num_points + 1):
+		var t = float(i) / num_points
+		var angle = start_angle + (end_angle - start_angle) * t
+		var point = Vector2(cos(angle), sin(angle)) * sword_range
+		arc_points.append(point)
+
+	# Close the arc back to center
+	arc_points.append(Vector2.ZERO)
+
+	slash_visual.polygon = arc_points
+	slash.add_child(slash_visual)
+
+	# Add outline for better visibility
+	var outline = Line2D.new()
+	outline.default_color = Color(1, 0.6, 0.9, 0.9)  # Brighter pink outline
+	outline.width = 3
+	for point in arc_points:
+		outline.add_point(point)
+	slash.add_child(outline)
+
 	# Get direction to nearest enemy
 	var enemies = get_tree().get_nodes_in_group("mob")
 	var nearest = null
 	var nearest_dist = INF
-	
+
 	for enemy in enemies:
 		if is_instance_valid(enemy):
 			var dist = global_position.distance_to(enemy.global_position)
 			if dist < nearest_dist:
 				nearest_dist = dist
 				nearest = enemy
-	
+
+	# Rotate slash toward nearest enemy, or use player movement direction
 	if nearest:
-		slash.rotation = global_position.angle_to_point(nearest.global_position) + PI/2
-	
-	slash.modulate = Color(1, 0.4, 0.8, 0.8)  # Pink energy color
-	
+		slash.rotation = global_position.angle_to_point(nearest.global_position)
+	else:
+		# Face the direction of movement, or default to right
+		if velocity.length() > 0:
+			slash.rotation = velocity.angle()
+		else:
+			slash.rotation = 0
+
 	# Fade out
 	var tween = create_tween()
-	tween.tween_property(slash, "modulate:a", 0.0, 0.3)
+	tween.tween_property(slash_visual, "color:a", 0.0, 0.25)
+	tween.parallel().tween_property(outline, "default_color:a", 0.0, 0.25)
 	tween.tween_callback(slash.queue_free)
 
 # ==============================================================
