@@ -91,10 +91,12 @@ func update_weapon_levels():
 	if not is_instance_valid(player):
 		return
 
-	if not player.has("weapon_data") or not player.weapon_data:
+	# Check if weapon_data exists (it's a Dictionary defined in player.gd)
+	if not player.weapon_data:
 		return
 
-	if not player.has("player_stats") or not player.player_stats:
+	# Check if player_stats exists (it's a Dictionary defined in player.gd)
+	if not player.player_stats:
 		return
 
 	# Get current weapons from player
