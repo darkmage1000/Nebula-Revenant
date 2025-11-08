@@ -189,10 +189,19 @@ func spawn_powerup(pos: Vector2):
 		get_parent().add_child(powerup)
 	else:
 		var powerup_scene = load("res://Powerup.tscn")
-		var powerup = powerup_scene.instantiate()
-		powerup.global_position = pos
-		powerup.powerup_type = powerup_type
-		get_parent().add_child(powerup)
+		if powerup_scene:
+			var powerup = powerup_scene.instantiate()
+			powerup.global_position = pos
+			powerup.powerup_type = powerup_type
+			get_parent().add_child(powerup)
+		else:
+			print("ERROR: Failed to load Powerup.tscn, falling back to procedural powerup")
+			# Fallback to procedural powerup
+			var powerup = Area2D.new()
+			powerup.global_position = pos
+			powerup.add_to_group("powerup")
+			powerup.set_meta("powerup_type", powerup_type)
+			get_parent().add_child(powerup)
 
 func create_explosion_particles():
 	# Simple particle explosion
