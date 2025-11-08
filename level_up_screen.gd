@@ -10,6 +10,7 @@ var player: CharacterBody2D = null
 # ==================== COMPREHENSIVE UPGRADE SYSTEM – Phase 2 Complete! ====================
 var upgrade_options: Array = [
 	# ==================== WEAPON UNLOCKS ====================
+	{"type": "unlock", "weapon": "pistol", "label": "🔫 Unlock Pistol", "desc": "Reliable ranged weapon. Rapid fire with good accuracy.", "rarity": "common"},
 	{"type": "unlock", "weapon": "shotgun", "label": "🔫 Unlock Shotgun", "desc": "Close-range devastation. Fires 4 pellets in a spread.", "rarity": "uncommon"},
 	{"type": "unlock", "weapon": "grenade", "label": "💣 Unlock Grenade Launcher", "desc": "Explosive area damage. Long-range lobbed projectiles.", "rarity": "uncommon"},
 	{"type": "unlock", "weapon": "aura", "label": "☢️ Unlock Radiation Aura", "desc": "Passive damage field. Constantly hurts nearby enemies.", "rarity": "rare"},
