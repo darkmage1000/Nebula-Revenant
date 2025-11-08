@@ -51,8 +51,8 @@ const MAX_ENEMIES_ON_SCREEN = 300
 var current_enemy_count: int = 0
 
 # MAP SIZE - Increased for more exploration space
-const MAP_WIDTH = 10000
-const MAP_HEIGHT = 10000
+const MAP_WIDTH = 30000
+const MAP_HEIGHT = 30000
 
 func _ready() -> void:
 	print("=== MAIN GAME _ready() called ===")
