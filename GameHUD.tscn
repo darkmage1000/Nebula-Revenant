@@ -70,3 +70,22 @@ grow_vertical = 0
 theme_override_font_sizes/font_size = 24
 text = "Level 1"
 horizontal_alignment = 1
+
+[node name="WeaponLevelsPanel" type="PanelContainer" parent="."]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -220.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = 200.0
+grow_horizontal = 0
+
+[node name="WeaponLevelsContainer" type="VBoxContainer" parent="WeaponLevelsPanel"]
+layout_mode = 2
+
+[node name="TitleLabel" type="Label" parent="WeaponLevelsPanel/WeaponLevelsContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "=== WEAPONS ==="
+horizontal_alignment = 1
