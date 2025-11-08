@@ -1,4 +1,5 @@
 # NebulaShardUI.gd - Shows nebula shard counts (total permanent + run shards)
+# Displays both total permanent shards and shards collected this run
 extends Control
 
 var save_manager: Node = null
@@ -6,8 +7,8 @@ var player: CharacterBody2D = null
 var last_total_shards: int = -1
 var last_run_shards: int = -1
 
-@onready var total_label: Label = null
-@onready var run_label: Label = null
+var total_label: Label = null
+var run_label: Label = null
 
 func _ready():
 	# Get SaveManager reference
