@@ -73,8 +73,11 @@ func update_items():
 	var items = main_game.items_collected
 
 	# Clear old items (keep title and separator)
+	# CRITICAL FIX: Must remove_child before queue_free to avoid infinite loop
 	while items_container.get_child_count() > 2:
-		items_container.get_child(2).queue_free()
+		var child = items_container.get_child(2)
+		items_container.remove_child(child)
+		child.queue_free()
 
 	# Show "No items" if empty
 	if items.size() == 0:
