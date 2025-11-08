@@ -211,7 +211,7 @@ func _on_save_pressed():
 func _on_main_menu_pressed():
 	print("=== MAIN MENU BUTTON PRESSED ===")
 
-	# Disable button immediately
+	# Disable button immediately to prevent double-clicks
 	if main_menu_button:
 		main_menu_button.disabled = true
 		print("✅ Button disabled")
@@ -228,32 +228,35 @@ func _on_main_menu_pressed():
 		save_manager.end_run()
 		print("💾 Run progress saved")
 
-	# CRITICAL: Unpause first
+	# CRITICAL: Unpause the game first
 	get_tree().paused = false
 	print("✅ Game unpaused")
-	
-	# Stop all input processing
+
+	# Stop input processing on this menu
 	set_process_input(false)
 	set_process(false)
-	
-	# Free the pause menu
-	queue_free()
-	print("✅ Pause menu freed")
-	
-	# Get the main game scene and free it
+
+	# Get the main game scene and free it before changing scenes
 	var root = get_tree().root
 	for child in root.get_children():
 		if child.name == "MainGame" or child.name.begins_with("@MainGame") or "main_game" in str(child.scene_file_path).to_lower():
 			print("🗑️ Freeing MainGame: ", child.name)
 			child.queue_free()
-	
+
+	# Free the pause menu
+	queue_free()
+	print("✅ Pause menu freed")
+
 	# Wait one frame for cleanup
 	await get_tree().process_frame
-	
-	# Now change to main menu
+
+	# Change to main menu
 	print("✅ Changing scene to MainMenu...")
-	get_tree().change_scene_to_file("res://MainMenu.tscn")
-	print("✅ Scene change requested!")
+	var result = get_tree().change_scene_to_file("res://MainMenu.tscn")
+	if result == OK:
+		print("✅ Scene change successful!")
+	else:
+		print("❌ Scene change failed with code: ", result)
 
 func _on_quit_pressed():
 	print("🚪 Quitting game...")

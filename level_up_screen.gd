@@ -82,6 +82,26 @@ var upgrade_options: Array = [
 	{"type": "weapon", "weapon": "aura", "key": "aoe", "value": 25, "label": "☢️ Aura: +25 Radius", "desc": "Larger damage field", "rarity": "uncommon"},
 	{"type": "weapon", "weapon": "aura", "key": "aoe", "value": 50, "label": "☢️ Aura: +50 Radius", "desc": "Massive damage field", "rarity": "rare"},
 	{"type": "weapon", "weapon": "aura", "key": "attack_speed", "value": 0.15, "label": "☢️ Aura: +15% Tick Rate", "desc": "Damage enemies more frequently", "rarity": "uncommon"},
+
+	# ==================== SWORD UPGRADES (Energy Sword - Sword Maiden) ====================
+	{"type": "weapon", "weapon": "sword", "key": "damage", "value": 3, "label": "⚔️ Sword: +3 Damage", "desc": "Sharper blade, more damage per swing", "rarity": "common"},
+	{"type": "weapon", "weapon": "sword", "key": "damage", "value": 6, "label": "⚔️ Sword: +6 Damage", "desc": "Major damage increase", "rarity": "uncommon"},
+	{"type": "weapon", "weapon": "sword", "key": "damage", "value": 12, "label": "⚔️ Sword: +12 Damage", "desc": "Devastating slash damage", "rarity": "rare"},
+	{"type": "weapon", "weapon": "sword", "key": "attack_speed", "value": 0.10, "label": "⚔️ Sword: +10% Swing Speed", "desc": "Swing faster", "rarity": "common"},
+	{"type": "weapon", "weapon": "sword", "key": "attack_speed", "value": 0.20, "label": "⚔️ Sword: +20% Swing Speed", "desc": "Rapid slashing", "rarity": "uncommon"},
+	{"type": "weapon", "weapon": "sword", "key": "attack_speed", "value": 0.35, "label": "⚔️ Sword: +35% Swing Speed", "desc": "Lightning-fast strikes", "rarity": "rare"},
+	{"type": "weapon", "weapon": "sword", "key": "distance", "value": 15, "label": "⚔️ Sword: +15 Range", "desc": "Extended melee reach", "rarity": "common"},
+	{"type": "weapon", "weapon": "sword", "key": "distance", "value": 25, "label": "⚔️ Sword: +25 Range", "desc": "Much longer reach", "rarity": "uncommon"},
+	{"type": "weapon", "weapon": "sword", "key": "distance", "value": 40, "label": "⚔️ Sword: +40 Range", "desc": "Massive melee range", "rarity": "rare"},
+	{"type": "weapon", "weapon": "sword", "key": "aoe", "value": 15, "label": "⚔️ Sword: +15 Arc Size", "desc": "Wider swing angle", "rarity": "uncommon"},
+	{"type": "weapon", "weapon": "sword", "key": "aoe", "value": 30, "label": "⚔️ Sword: +30 Arc Size", "desc": "Much wider swing arc", "rarity": "rare"},
+	{"type": "weapon", "weapon": "sword", "key": "aoe", "value": 50, "label": "⚔️ Sword: +50 Arc Size", "desc": "Near 360° slashing arc", "rarity": "legendary"},
+	{"type": "weapon", "weapon": "sword", "key": "projectiles", "value": 1, "label": "⚔️ Sword: +1 Target", "desc": "Hit one more enemy per swing", "rarity": "uncommon"},
+	{"type": "weapon", "weapon": "sword", "key": "projectiles", "value": 2, "label": "⚔️ Sword: +2 Targets", "desc": "Hit two more enemies per swing", "rarity": "rare"},
+	{"type": "weapon", "weapon": "sword", "key": "projectiles", "value": 3, "label": "⚔️ Sword: +3 Targets", "desc": "Cleave through multiple foes", "rarity": "legendary"},
+	{"type": "weapon", "weapon": "sword", "key": "knockback", "value": 30, "label": "⚔️ Sword: +30 Knockback", "desc": "Push enemies back further", "rarity": "common"},
+	{"type": "weapon", "weapon": "sword", "key": "knockback", "value": 60, "label": "⚔️ Sword: +60 Knockback", "desc": "Massive knockback force", "rarity": "uncommon"},
+	{"type": "weapon", "weapon": "sword", "key": "poison", "value": true, "label": "⚔️ Sword: Poison Edge", "desc": "30% chance to poison enemies (30% weapon dmg/sec)", "rarity": "rare"},
 ]
 
 # UI Nodes - now using correct paths from the scene

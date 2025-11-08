@@ -97,10 +97,39 @@ func add_spacing(height: int):
 func _on_exit_pressed():
 	print("🏠 Game Over: GOING TO MAIN MENU")
 
+	# Disable button to prevent double-clicks
+	if exit_button:
+		exit_button.disabled = true
+		print("✅ Exit button disabled")
+
+	# Emit signal for any listeners
 	exit_to_menu.emit()
 
-	# UNPAUSE
+	# CRITICAL: Unpause the game first
 	get_tree().paused = false
+	print("✅ Game unpaused")
 
-	# GO TO MAIN MENU
-	get_tree().change_scene_to_file("res://MainMenu.tscn")
+	# Stop processing
+	set_process_input(false)
+	set_process(false)
+
+	# Free the main game scene if it exists
+	var root = get_tree().root
+	for child in root.get_children():
+		if child.name == "MainGame" or child.name.begins_with("@MainGame") or "main_game" in str(child.scene_file_path).to_lower():
+			print("🗑️ Freeing MainGame: ", child.name)
+			child.queue_free()
+
+	# Free this game over screen
+	queue_free()
+
+	# Wait one frame for cleanup
+	await get_tree().process_frame
+
+	# Change to main menu
+	print("✅ Changing scene to MainMenu...")
+	var result = get_tree().change_scene_to_file("res://MainMenu.tscn")
+	if result == OK:
+		print("✅ Scene change successful!")
+	else:
+		print("❌ Scene change failed with code: ", result)
