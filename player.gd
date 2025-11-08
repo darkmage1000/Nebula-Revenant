@@ -307,14 +307,18 @@ func _on_sword_attack():
 	var sword_damage = data.damage * player_stats.damage_mult
 	var sword_aoe = data.aoe
 	
-	# Find enemies in melee range
-	var enemies = get_tree().get_nodes_in_group("mob")
+	# Find enemies in melee range (mobs, bosses, and asteroids)
 	var hit_enemies = []
-	
-	for enemy in enemies:
+
+	# Get all targetable enemies
+	var mobs = get_tree().get_nodes_in_group("mob")
+	var asteroids = get_tree().get_nodes_in_group("asteroid")
+	var all_targets = mobs + asteroids
+
+	for enemy in all_targets:
 		if not is_instance_valid(enemy):
 			continue
-			
+
 		var dist = global_position.distance_to(enemy.global_position)
 		if dist <= sword_range:
 			hit_enemies.append(enemy)
