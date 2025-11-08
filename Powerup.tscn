@@ -1,0 +1,29 @@
+[gd_scene load_steps=3 format=3 uid="uid://powerup123"]
+
+[ext_resource type="Script" path="res://Powerup.gd" id="1_powerup"]
+
+[sub_resource type="CircleShape2D" id="powerup_collision"]
+radius = 30.0
+
+[node name="Powerup" type="Area2D"]
+collision_layer = 8
+collision_mask = 4
+monitoring = true
+script = ExtResource("1_powerup")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+modulate = Color(1, 1, 1, 1)
+scale = Vector2(2, 2)
+texture = preload("res://gem.png")
+
+[node name="Glow" type="Sprite2D" parent="."]
+modulate = Color(1, 1, 1, 0.5)
+z_index = -1
+scale = Vector2(2.5, 2.5)
+texture = preload("res://gem.png")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("powerup_collision")
+
+[connection signal="area_entered" from="." to="." method="_on_area_entered"]
+[connection signal="body_entered" from="." to="." method="_on_body_entered"]
