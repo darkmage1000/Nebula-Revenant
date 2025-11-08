@@ -586,7 +586,8 @@ func activate_triple_attack_speed():
 	print("⚡ TRIPLE ATTACK SPEED for 10 seconds!")
 	show_powerup_text("RAPID FIRE!", Color(1, 0, 1, 1))
 	create_powerup_display("attack_speed", 10.0)
-	var original_speed = player_stats.attack_speed_mult
+
+	# Multiply attack speed by 3x
 	player_stats.attack_speed_mult *= 3.0
 	_update_all_weapons()
 
@@ -596,7 +597,9 @@ func activate_triple_attack_speed():
 		sword_timer.wait_time = 1.0 / (weapon_data["sword"].attack_speed * 3.0)
 
 	await get_tree().create_timer(10.0).timeout
-	player_stats.attack_speed_mult = original_speed
+
+	# Divide by 3x to remove this powerup's effect (handles stacking correctly)
+	player_stats.attack_speed_mult /= 3.0
 	_update_all_weapons()
 
 	# Reset sword timer
