@@ -11,6 +11,10 @@ var main_game: Node2D = null
 @onready var health_label = $HealthBar/HealthLabel
 @onready var xp_bar = $XPBar
 @onready var level_label = $LevelLabel
+@onready var weapon_levels_container = $WeaponLevelsPanel/WeaponLevelsContainer
+
+# Track weapon labels for updates
+var weapon_labels: Dictionary = {}
 
 func _ready():
 	# Will be set by main_game
@@ -31,6 +35,7 @@ func _process(delta: float):
 	update_health()
 	update_xp()
 	update_level()
+	update_weapon_levels()
 
 # Update timer display (00:00 format)
 func update_timer():
@@ -79,3 +84,88 @@ func update_level():
 		level_label.text = "Level ?"
 		return
 	level_label.text = "Level %d" % player.player_stats.level
+
+# Update weapon levels display
+func update_weapon_levels():
+	# Safety checks to prevent crashes
+	if not is_instance_valid(player):
+		return
+
+	if not player.has("weapon_data") or not player.weapon_data:
+		return
+
+	if not player.has("player_stats") or not player.player_stats:
+		return
+
+	# Get current weapons from player
+	var current_weapons = player.player_stats.get("current_weapons", [])
+	if not current_weapons or current_weapons.size() == 0:
+		return
+
+	# Update or create labels for each weapon
+	for weapon_key in current_weapons:
+		if not player.weapon_data.has(weapon_key):
+			continue
+
+		var weapon_data = player.weapon_data[weapon_key]
+		if not weapon_data:
+			continue
+
+		var weapon_name = weapon_data.get("name", "Unknown")
+		var weapon_level = weapon_data.get("level", 0)
+
+		# Check if label already exists
+		if not weapon_labels.has(weapon_key):
+			# Create new label for this weapon
+			if not is_instance_valid(weapon_levels_container):
+				return
+
+			var label = Label.new()
+			label.name = weapon_key + "_label"
+			label.add_theme_font_size_override("font_size", 16)
+			label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			weapon_levels_container.add_child(label)
+			weapon_labels[weapon_key] = label
+
+		# Update label text
+		var label = weapon_labels[weapon_key]
+		if weapon_level > 0:
+			label.text = "%s  Lv%d" % [get_weapon_icon(weapon_key), weapon_level]
+		else:
+			label.text = "%s  Lv0" % get_weapon_icon(weapon_key)
+
+		# Color based on level
+		if weapon_level >= 3:
+			label.modulate = Color(1.0, 0.6, 1.0)  # Purple for max level
+		elif weapon_level >= 2:
+			label.modulate = Color(0.4, 0.8, 1.0)  # Blue for level 2
+		elif weapon_level >= 1:
+			label.modulate = Color(0.4, 1.0, 0.6)  # Green for level 1
+		else:
+			label.modulate = Color(1.0, 1.0, 1.0)  # White for level 0
+
+	# Remove labels for weapons no longer equipped
+	var keys_to_remove = []
+	for weapon_key in weapon_labels:
+		if not current_weapons.has(weapon_key):
+			keys_to_remove.append(weapon_key)
+
+	for key in keys_to_remove:
+		if weapon_labels[key]:
+			weapon_labels[key].queue_free()
+		weapon_labels.erase(key)
+
+func get_weapon_icon(weapon_key: String) -> String:
+	match weapon_key:
+		"pistol":
+			return "🔫"
+		"shotgun":
+			return "💥"
+		"grenade":
+			return "💣"
+		"aura":
+			return "☢️"
+		"sword":
+			return "⚔️"
+		_:
+			return "🔸"

@@ -484,12 +484,12 @@ func upgrade_weapon(weapon_key: String, upgrade_key: String, value) -> void:
 	if not weapon_data.has(weapon_key):
 		print("ERROR: Unknown weapon: ", weapon_key)
 		return
-	
+
 	var data = weapon_data[weapon_key]
-	
+
 	if data.has(upgrade_key):
 		var old_value = data[upgrade_key]
-		
+
 		match upgrade_key:
 			"damage", "projectiles", "pierce", "knockback", "aoe", "distance":
 				data[upgrade_key] += value
@@ -497,8 +497,11 @@ func upgrade_weapon(weapon_key: String, upgrade_key: String, value) -> void:
 				data[upgrade_key] *= (1.0 + value)
 			"poison", "burn":
 				data[upgrade_key] = true
-		
-		print("Upgraded weapon '%s' %s: %s → %s" % [weapon_key, upgrade_key, str(old_value), str(data[upgrade_key])])
+
+		# Increment weapon level for tracking upgrades
+		data["level"] = data.get("level", 0) + 1
+
+		print("Upgraded weapon '%s' %s: %s → %s (Level %d)" % [weapon_key, upgrade_key, str(old_value), str(data[upgrade_key]), data["level"]])
 	else:
 		print("ERROR: Weapon '%s' doesn't have stat '%s'" % [weapon_key, upgrade_key])
 	
