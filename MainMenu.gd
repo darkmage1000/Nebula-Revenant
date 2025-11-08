@@ -239,7 +239,7 @@ func add_character_entry(parent: VBoxContainer, name: String, icon: String,
 		status_label.add_theme_color_override("font_color", Color(0.4, 1, 0.4, 1))
 	else:
 		if progress >= required_level:
-			status_label.text = "🏆 Challenge Complete! Purchase for 5000 Shards"
+			status_label.text = "🏆 Challenge Complete! Purchase for 500 Shards"
 			status_label.add_theme_color_override("font_color", Color(1, 0.9, 0.3, 1))
 		else:
 			status_label.text = "🔒 Reach Level %d (Progress: %d/%d)" % [required_level, progress, required_level]

@@ -262,12 +262,12 @@ func try_unlock_swordmaiden() -> bool:
 		return false
 	
 	# Must have enough shards
-	if save_data.total_shards < 5000:
-		print("❌ Not enough shards! Need 5000, have %d" % save_data.total_shards)
+	if save_data.total_shards < 500:
+		print("❌ Not enough shards! Need 500, have %d" % save_data.total_shards)
 		return false
-	
+
 	# Purchase!
-	if spend_shards(5000):
+	if spend_shards(500):
 		save_data.unlocks.swordmaiden_unlocked = true
 		save_game()
 		print("🗡️ SWORDMAIDEN UNLOCKED!")
@@ -288,7 +288,7 @@ func update_swordmaiden_challenge(level: int):
 		save_game()
 		
 		if level >= 30 and not save_data.unlocks.swordmaiden_unlocked:
-			print("🏆 CHALLENGE COMPLETE! Swordmaiden can now be purchased for 5000 shards!")
+			print("🏆 CHALLENGE COMPLETE! Swordmaiden can now be purchased for 500 shards!")
 
 # ==============================================================
 # ORIGINAL FUNCTIONS
