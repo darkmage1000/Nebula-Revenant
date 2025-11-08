@@ -624,12 +624,16 @@ func set_character(char_type: String):
 	apply_character_bonuses()
 
 	# Update sprite if it exists
-	if sprite and ResourceLoader.exists("res://female_hero.png") and char_type == "swordmaiden":
-		sprite.texture = load("res://female_hero.png")
-		sprite.scale = Vector2(1.5, 1.5)
+	if sprite and char_type == "swordmaiden":
+		if ResourceLoader.exists("res://female hero.png"):
+			sprite.texture = load("res://female hero.png")
+			sprite.scale = Vector2(1.5, 1.5)
+			print("✅ Sword Maiden sprite loaded successfully!")
+		else:
+			print("⚠️ WARNING: 'female hero.png' not found!")
 	elif sprite and char_type == "ranger":
 		# Keep default player sprite
-		pass
+		print("✅ Using default Ranger sprite")
 
 	# Add starting weapon based on character type
 	# This happens AFTER character_type is set, ensuring correct weapon
