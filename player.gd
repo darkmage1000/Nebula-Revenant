@@ -108,8 +108,9 @@ var weapon_upgrade_paths = {
 		{"damage": 12, "aoe": 210}
 	],
 	"sword": [
-		{"damage": 35, "aoe": 100, "knockback": 100},
-		{"damage": 50, "aoe": 120, "attack_speed": 2.5}
+		{"damage": 35, "aoe": 100, "distance": 120, "attack_speed": 2.2, "knockback": 75},
+		{"damage": 50, "aoe": 120, "distance": 150, "attack_speed": 2.5, "projectiles": 1, "knockback": 100},
+		{"damage": 70, "aoe": 150, "distance": 180, "attack_speed": 3.0, "projectiles": 2, "poison": true}
 	]
 }
 
@@ -291,7 +292,8 @@ func create_sword_weapon(data: Dictionary):
 	# Create simple melee sword system
 	var sword_timer = Timer.new()
 	sword_timer.name = "SwordTimer"
-	sword_timer.wait_time = 1.0 / data.attack_speed
+	# Apply attack_speed_mult to sword timer
+	sword_timer.wait_time = 1.0 / (data.attack_speed * player_stats.attack_speed_mult)
 	sword_timer.timeout.connect(_on_sword_attack)
 	sword_timer.autostart = true
 	add_child(sword_timer)
@@ -301,12 +303,18 @@ func _on_sword_attack():
 	# Get sword data
 	if not weapon_data.has("sword"):
 		return
-	
+
 	var data = weapon_data["sword"]
-	var sword_range = data.distance
+	# FIXED: Apply attack_range_mult to sword range
+	var sword_range = data.distance * player_stats.attack_range_mult
 	var sword_damage = data.damage * player_stats.damage_mult
-	var sword_aoe = data.aoe
-	
+	# FIXED: Apply aoe_mult to sword AOE (affects visual and swing arc)
+	var sword_aoe = data.aoe * player_stats.aoe_mult
+
+	# FIXED: Use projectiles to determine max targets (default 3 if no projectiles)
+	# Each "projectile" for melee = ability to hit one more target simultaneously
+	var max_targets = max(3, 3 + data.projectiles)
+
 	# Find enemies in melee range (mobs, bosses, and asteroids)
 	var hit_enemies = []
 
@@ -322,39 +330,41 @@ func _on_sword_attack():
 		var dist = global_position.distance_to(enemy.global_position)
 		if dist <= sword_range:
 			hit_enemies.append(enemy)
-	
-	# Hit closest enemies (up to 3)
+
+	# Hit closest enemies (based on max_targets)
 	hit_enemies.sort_custom(func(a, b): return global_position.distance_to(a.global_position) < global_position.distance_to(b.global_position))
-	
+
 	var hits = 0
 	for enemy in hit_enemies:
-		if hits >= 3:  # Max 3 enemies per swing
+		if hits >= max_targets:
 			break
-			
+
 		if enemy.has_method("take_damage"):
 			var crit = randf() < player_stats.crit_chance
 			var final_dmg = sword_damage
 			if crit:
 				final_dmg *= player_stats.crit_damage
-			
-			enemy.take_damage(final_dmg, false, crit)
+
+			# NEW: Apply poison if enabled on weapon
+			var is_poisoned = data.poison and randf() < 0.3  # 30% chance if poison enabled
+			enemy.take_damage(final_dmg, is_poisoned, crit)
 			report_weapon_damage("sword", final_dmg)
-			
+
 			# Apply knockback
 			if enemy.has_method("apply_knockback"):
 				# apply_knockback expects (knockback_amount: float, source_position: Vector2)
 				enemy.apply_knockback(data.knockback, global_position)
-			
+
 			hits += 1
-	
+
 	if hits > 0:
 		# Visual feedback - sword slash effect (optional)
 		create_slash_effect()
 
 func create_slash_effect():
-	# Get sword range from weapon data
-	var sword_range = weapon_data["sword"].distance if weapon_data.has("sword") else 100
-	var sword_aoe = weapon_data["sword"].aoe if weapon_data.has("sword") else 80
+	# Get sword range from weapon data with multipliers applied
+	var sword_range = (weapon_data["sword"].distance * player_stats.attack_range_mult) if weapon_data.has("sword") else 100
+	var sword_aoe = (weapon_data["sword"].aoe * player_stats.aoe_mult) if weapon_data.has("sword") else 80
 
 	# Create pink energy slash visual
 	var slash = Node2D.new()
@@ -496,8 +506,9 @@ func upgrade_weapon(weapon_key: String, upgrade_key: String, value) -> void:
 	if weapon_key == "sword" and upgrade_key == "attack_speed":
 		var sword_timer = get_node_or_null("SwordTimer")
 		if sword_timer:
-			sword_timer.wait_time = 1.0 / data.attack_speed
-	
+			# FIXED: Apply attack_speed_mult to sword timer
+			sword_timer.wait_time = 1.0 / (data.attack_speed * player_stats.attack_speed_mult)
+
 	_update_weapon_instance(weapon_key, data)
 
 func _update_all_weapons() -> void:
@@ -506,6 +517,16 @@ func _update_all_weapons() -> void:
 			_update_weapon_instance(weapon_key, weapon_data[weapon_key])
 
 func _update_weapon_instance(weapon_key: String, data: Dictionary) -> void:
+	# Special handling for sword (timer-based weapon)
+	if weapon_key == "sword":
+		var sword_timer = get_node_or_null("SwordTimer")
+		if sword_timer:
+			# Update timer with current attack speed and multiplier
+			sword_timer.wait_time = 1.0 / (data.attack_speed * player_stats.attack_speed_mult)
+			print("Updated sword timer: ", sword_timer.wait_time)
+		return
+
+	# Handle other weapons with set_stats method
 	for child in get_children():
 		if child.has_method("set_stats") and child.get("stats"):
 			var weapon_stats = child.get("stats")
