@@ -8,8 +8,8 @@ var max_health: float = 15.0
 
 # Drop chances (mutually exclusive)
 const DROP_SHARD_CHANCE = 0.90  # 90% drop shards (INCREASED - shards are primary resource!)
-const DROP_HEALTHPACK_CHANCE = 0.08  # 8% drop health pack
-const DROP_POWERUP_CHANCE = 0.02  # 2% drop powerup
+const DROP_HEALTHPACK_CHANCE = 0.02  # 2% drop health pack (REDUCED - was cluttering screen)
+const DROP_POWERUP_CHANCE = 0.08  # 8% drop powerup
 
 # Try to preload scenes (may not exist)
 var NEBULA_SHARD_SCENE = null
@@ -73,7 +73,7 @@ func explode():
 func spawn_drops():
 	var drop_position = global_position
 
-	# Roll for drop type: 90% shards, 8% health pack, 2% powerups
+	# Roll for drop type: 90% shards, 2% health pack, 8% powerups
 	var roll = randf()
 
 	if roll < DROP_SHARD_CHANCE:
@@ -94,11 +94,11 @@ func spawn_drops():
 				player.collect_currency(randi_range(1, 4))
 
 	elif roll < DROP_SHARD_CHANCE + DROP_HEALTHPACK_CHANCE:
-		# 8% chance for health pack (0.90 to 0.98)
+		# 2% chance for health pack (0.90 to 0.92)
 		spawn_healthpack(drop_position)
 
 	else:
-		# 2% chance for powerup (0.98 to 1.0)
+		# 8% chance for powerup (0.92 to 1.0)
 		spawn_powerup(drop_position)
 
 func spawn_healthpack(pos: Vector2):
