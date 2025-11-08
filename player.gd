@@ -129,19 +129,14 @@ func _ready():
 
 	player_stats.current_health = player_stats.max_health
 	apply_starting_bonuses()
-	apply_character_bonuses()
+	# NOTE: Character bonuses and starting weapon are now applied in set_character()
+	# This is called by main_game.gd AFTER _ready() to ensure proper timing
 	run_stats.start_time = Time.get_ticks_msec() / 1000.0
 
 	if pickup_radius:
 		var collision_shape = pickup_radius.get_node("CollisionShape2D")
 		if collision_shape and collision_shape.shape:
 			collision_shape.shape.radius = player_stats.pickup_radius
-
-	# Set starting weapon based on character
-	if player_stats.character_type == "ranger":
-		add_weapon("pistol")
-	elif player_stats.character_type == "swordmaiden":
-		add_weapon("sword")
 
 func apply_character_bonuses():
 	# Swordmaiden: melee specialist with tankier stats
@@ -625,6 +620,9 @@ func activate_nuke():
 func set_character(char_type: String):
 	player_stats.character_type = char_type
 
+	# Apply character-specific bonuses
+	apply_character_bonuses()
+
 	# Update sprite if it exists
 	if sprite and ResourceLoader.exists("res://female_hero.png") and char_type == "swordmaiden":
 		sprite.texture = load("res://female_hero.png")
@@ -632,6 +630,15 @@ func set_character(char_type: String):
 	elif sprite and char_type == "ranger":
 		# Keep default player sprite
 		pass
+
+	# Add starting weapon based on character type
+	# This happens AFTER character_type is set, ensuring correct weapon
+	if char_type == "ranger":
+		add_weapon("pistol")
+		print("🔫 Ranger starts with: Pistol")
+	elif char_type == "swordmaiden":
+		add_weapon("sword")
+		print("🗡️ Sword Maiden starts with: Energy Sword")
 
 # ==============================================================
 # 17. POWERUP UI
