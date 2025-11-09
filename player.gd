@@ -202,7 +202,16 @@ func _physics_process(delta):
 	const DAMAGE_RATE = 6.0
 	var overlapping_mobs = hurt_box.get_overlapping_bodies()
 	if overlapping_mobs.size() > 0:
-		var dmg = DAMAGE_RATE * overlapping_mobs.size() * delta
+		# NEW: Calculate average damage multiplier from touching mobs
+		var total_dmg_mult = 0.0
+		for mob in overlapping_mobs:
+			if mob.has_method("get"):
+				total_dmg_mult += mob.get("damage_multiplier") if "damage_multiplier" in mob else 1.0
+			else:
+				total_dmg_mult += 1.0
+		var avg_dmg_mult = total_dmg_mult / overlapping_mobs.size()
+		
+		var dmg = DAMAGE_RATE * overlapping_mobs.size() * delta * avg_dmg_mult
 		dmg = max(1.0, dmg - player_stats.armor * delta)
 		player_stats.current_health -= dmg
 		if player_stats.current_health <= 0:
@@ -305,81 +314,151 @@ func _on_sword_attack():
 		return
 
 	var data = weapon_data["sword"]
-	# FIXED: Apply attack_range_mult to sword range
+	# Apply multipliers to sword stats
 	var sword_range = data.distance * player_stats.attack_range_mult
 	var sword_damage = data.damage * player_stats.damage_mult
-	# FIXED: Apply aoe_mult to sword AOE (affects visual and swing arc)
 	var sword_aoe = data.aoe * player_stats.aoe_mult
 
-	# FIXED: Use projectiles to determine max targets (default 3 if no projectiles)
-	# Each "projectile" for melee = ability to hit one more target simultaneously
-	var max_targets = max(3, 3 + data.projectiles)
+	# Number of simultaneous swings = 1 + projectiles
+	# 0 projectiles = 1 swing, 1 projectile = 2 swings, etc.
+	var num_swings = 1 + data.projectiles
+	
+	# Max targets per swing (each swing can hit multiple enemies)
+	var max_targets_per_swing = 3
 
-	# Find enemies in melee range (mobs, bosses, and asteroids)
-	var hit_enemies = []
+	# Create multiple swings in different directions
+	for swing_index in range(num_swings):
+		# Calculate angle for this swing
+		var base_angle = 0.0
+		
+		# Get direction to nearest enemy for primary swing
+		var enemies = get_tree().get_nodes_in_group("mob")
+		var nearest = null
+		var nearest_dist = INF
 
-	# Get all targetable enemies
-	var mobs = get_tree().get_nodes_in_group("mob")
-	var asteroids = get_tree().get_nodes_in_group("asteroid")
-	var all_targets = mobs + asteroids
+		for enemy in enemies:
+			if is_instance_valid(enemy):
+				var dist = global_position.distance_to(enemy.global_position)
+				if dist < nearest_dist:
+					nearest_dist = dist
+					nearest = enemy
 
-	for enemy in all_targets:
-		if not is_instance_valid(enemy):
-			continue
+		# Set base angle based on nearest enemy or movement
+		if nearest:
+			base_angle = global_position.angle_to_point(nearest.global_position)
+		else:
+			# Face the direction of movement, or default to right
+			if velocity.length() > 0:
+				base_angle = velocity.angle()
+			else:
+				base_angle = 0
+		
+		# Spread swings around in different directions
+		if num_swings > 1:
+			# First swing faces target, others spread out
+			if swing_index > 0:
+				# Spread evenly around 360 degrees
+				var angle_offset = (TAU / num_swings) * swing_index
+				base_angle += angle_offset
+	
+		# Find enemies in melee range for this swing
+		var hit_enemies = []
 
-		var dist = global_position.distance_to(enemy.global_position)
-		if dist <= sword_range:
-			hit_enemies.append(enemy)
+		# Get all targetable enemies
+		var mobs = get_tree().get_nodes_in_group("mob")
+		var asteroids = get_tree().get_nodes_in_group("asteroid")
+		var all_targets = mobs + asteroids
 
-	# Hit closest enemies (based on max_targets)
-	hit_enemies.sort_custom(func(a, b): return global_position.distance_to(a.global_position) < global_position.distance_to(b.global_position))
+		for enemy in all_targets:
+			if not is_instance_valid(enemy):
+				continue
 
-	var hits = 0
-	for enemy in hit_enemies:
-		if hits >= max_targets:
-			break
+			var dist = global_position.distance_to(enemy.global_position)
+			if dist <= sword_range:
+				# Check if enemy is within the swing arc
+				var angle_to_enemy = global_position.angle_to_point(enemy.global_position)
+				var angle_diff = abs(angle_to_enemy - base_angle)
+				# Normalize angle difference to -PI to PI
+				while angle_diff > PI:
+					angle_diff -= TAU
+				while angle_diff < -PI:
+					angle_diff += TAU
+				angle_diff = abs(angle_diff)
+				
+				# Only hit if within the swing arc (90 degrees = PI/2)
+				if angle_diff <= PI/2:
+					hit_enemies.append(enemy)
 
-		if enemy.has_method("take_damage"):
-			var crit = randf() < player_stats.crit_chance
-			var final_dmg = sword_damage
-			if crit:
-				final_dmg *= player_stats.crit_damage
+		# Hit closest enemies (based on max_targets_per_swing)
+		hit_enemies.sort_custom(func(a, b): return global_position.distance_to(a.global_position) < global_position.distance_to(b.global_position))
 
-			# NEW: Apply poison if enabled on weapon
-			var is_poisoned = data.poison and randf() < 0.3  # 30% chance if poison enabled
-			enemy.take_damage(final_dmg, is_poisoned, crit)
-			report_weapon_damage("sword", final_dmg)
+		var hits = 0
+		for enemy in hit_enemies:
+			if hits >= max_targets_per_swing:
+				break
 
-			# Apply knockback
-			if enemy.has_method("apply_knockback"):
-				# apply_knockback expects (knockback_amount: float, source_position: Vector2)
-				enemy.apply_knockback(data.knockback, global_position)
+			if enemy.has_method("take_damage"):
+				var crit = randf() < player_stats.crit_chance
+				var final_dmg = sword_damage
+				if crit:
+					final_dmg *= player_stats.crit_damage
 
-			hits += 1
+				# Apply poison if enabled on weapon
+				var is_poisoned = data.poison and randf() < 0.3  # 30% chance if poison enabled
+				
+				# Take damage with poison flag
+				if is_poisoned:
+					# Apply poison DOT - 30% of weapon damage per second for 5 seconds
+					if enemy.has_method("start_dot"):
+						enemy.start_dot("sword_poison", sword_damage * 0.3, 5, Color(0, 0.8, 0.2))  # Green poison
+						enemy.take_damage(final_dmg, false, crit)  # Don't pass is_poisoned to take_damage, we handle it with DOT
+				else:
+					enemy.take_damage(final_dmg, false, crit)
+				
+				report_weapon_damage("sword", final_dmg)
 
-	if hits > 0:
-		# Visual feedback - sword slash effect (optional)
-		create_slash_effect()
+				# Apply knockback
+				if enemy.has_method("apply_knockback"):
+					enemy.apply_knockback(data.knockback, global_position)
 
-func create_slash_effect():
-	# Get sword range from weapon data with multipliers applied
-	var sword_range = (weapon_data["sword"].distance * player_stats.attack_range_mult) if weapon_data.has("sword") else 100
-	var sword_aoe = (weapon_data["sword"].aoe * player_stats.aoe_mult) if weapon_data.has("sword") else 80
+				hits += 1
 
-	# Create pink energy slash visual
+		# Create visual slash effect for this swing
+		# ONLY show visuals if enemies were actually hit
+		if hits > 0:
+			create_slash_effect_at_angle(base_angle, sword_range, sword_aoe, data.poison)
+
+func create_slash_effect_at_angle(angle: float, sword_range: float, sword_aoe: float, is_poison: bool):
+	# Create energy slash visual at specific angle
 	var slash = Node2D.new()
 	slash.global_position = global_position
+	slash.rotation = angle
 	get_parent().add_child(slash)
+
+	# Choose color based on poison
+	var slash_color: Color
+	var outline_color: Color
+	
+	if is_poison:
+		# Green poison energy
+		slash_color = Color(0.2, 1, 0.3, 0.7)  # Bright green
+		outline_color = Color(0.4, 1, 0.5, 0.9)  # Brighter green outline
+	else:
+		# Pink energy (default)
+		slash_color = Color(1, 0.4, 0.8, 0.7)  # Bright pink
+		outline_color = Color(1, 0.6, 0.9, 0.9)  # Brighter pink outline
 
 	# Create visual slash arc using Polygon2D
 	var slash_visual = Polygon2D.new()
-	slash_visual.color = Color(1, 0.4, 0.8, 0.7)  # Bright pink energy
+	slash_visual.color = slash_color
 
 	# Create arc shape representing sword slash range
+	# Arc width is based on sword_aoe
 	var arc_points = PackedVector2Array()
 	var num_points = 20
-	var start_angle = -PI/4  # 45 degrees left
-	var end_angle = PI/4      # 45 degrees right
+	var arc_width = (sword_aoe / 80.0) * (PI/4)  # Scale arc width based on AOE
+	var start_angle = -arc_width
+	var end_angle = arc_width
 
 	# Add center point
 	arc_points.append(Vector2.ZERO)
@@ -387,8 +466,8 @@ func create_slash_effect():
 	# Add arc points at sword range
 	for i in range(num_points + 1):
 		var t = float(i) / num_points
-		var angle = start_angle + (end_angle - start_angle) * t
-		var point = Vector2(cos(angle), sin(angle)) * sword_range
+		var arc_angle = start_angle + (end_angle - start_angle) * t
+		var point = Vector2(cos(arc_angle), sin(arc_angle)) * sword_range
 		arc_points.append(point)
 
 	# Close the arc back to center
@@ -399,33 +478,28 @@ func create_slash_effect():
 
 	# Add outline for better visibility
 	var outline = Line2D.new()
-	outline.default_color = Color(1, 0.6, 0.9, 0.9)  # Brighter pink outline
+	outline.default_color = outline_color
 	outline.width = 3
 	for point in arc_points:
 		outline.add_point(point)
 	slash.add_child(outline)
 
-	# Get direction to nearest enemy
-	var enemies = get_tree().get_nodes_in_group("mob")
-	var nearest = null
-	var nearest_dist = INF
-
-	for enemy in enemies:
-		if is_instance_valid(enemy):
-			var dist = global_position.distance_to(enemy.global_position)
-			if dist < nearest_dist:
-				nearest_dist = dist
-				nearest = enemy
-
-	# Rotate slash toward nearest enemy, or use player movement direction
-	if nearest:
-		slash.rotation = global_position.angle_to_point(nearest.global_position)
-	else:
-		# Face the direction of movement, or default to right
-		if velocity.length() > 0:
-			slash.rotation = velocity.angle()
-		else:
-			slash.rotation = 0
+	# Add poison particle effect if poison
+	if is_poison:
+		var poison_particles = Node2D.new()
+		for i in range(5):
+			var particle = ColorRect.new()
+			particle.size = Vector2(4, 4)
+			particle.color = Color(0, 1, 0.3, 0.8)
+			particle.position = Vector2(randf_range(0, sword_range), 0).rotated(randf_range(start_angle, end_angle))
+			poison_particles.add_child(particle)
+			
+			# Animate poison particles
+			var particle_tween = create_tween()
+			particle_tween.tween_property(particle, "position", particle.position * 1.5, 0.3)
+			particle_tween.parallel().tween_property(particle, "modulate:a", 0.0, 0.3)
+		
+		slash.add_child(poison_particles)
 
 	# Fade out
 	var tween = create_tween()

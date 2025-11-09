@@ -1,0 +1,19 @@
+[gd_scene load_steps=4 format=3 uid="uid://e6n7p8q9r0s1t"]
+
+[ext_resource type="Script" uid="uid://crqn8bow1qs3x" path="res://mob.gd" id="1_mob"]
+[ext_resource type="Texture2D" uid="uid://e0m9n8p7q6r5s" path="res://spacedragon.png" id="2_sprite"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_spacedragon"]
+radius = 35.0
+
+[node name="SpaceDragon" type="CharacterBody2D" groups=["mob"]]
+collision_layer = 2
+collision_mask = 0
+script = ExtResource("1_mob")
+
+[node name="SpaceDragonSprite" type="Sprite2D" parent="."]
+scale = Vector2(0.45, 0.45)
+texture = ExtResource("2_sprite")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_spacedragon")

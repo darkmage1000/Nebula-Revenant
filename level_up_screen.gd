@@ -32,15 +32,15 @@ var upgrade_options: Array = [
 	
 	# ==================== DEFENSE STATS ====================
 	{"type": "stat", "key": "max_health", "value": 30, "label": "❤️ Max HP +30", "desc": "Increases maximum health", "rarity": "common"},
-	{"type": "stat", "key": "max_health", "value": 50, "label": "❤️ Max HP +50", "desc": "Large health increase", "rarity": "uncommon"},
-	{"type": "stat", "key": "max_health", "value": 100, "label": "❤️ Max HP +100", "desc": "Massive health boost", "rarity": "rare"},
+	{"type": "stat", "key": "max_health", "value": 40, "label": "❤️ Max HP +40", "desc": "Large health increase", "rarity": "uncommon"},
+	{"type": "stat", "key": "max_health", "value": 60, "label": "❤️ Max HP +60", "desc": "Massive health boost", "rarity": "rare"},
 	{"type": "stat", "key": "health_regen", "value": 0.25, "label": "💚 Regen +0.25/sec", "desc": "Slowly regenerate health", "rarity": "common"},
 	{"type": "stat", "key": "health_regen", "value": 0.75, "label": "💚 Regen +0.75/sec", "desc": "Faster health regeneration", "rarity": "uncommon"},
 	{"type": "stat", "key": "health_regen", "value": 1.5, "label": "💚 Regen +1.5/sec", "desc": "Rapid health regeneration", "rarity": "rare"},
-	{"type": "stat", "key": "lifesteal", "value": 0.025, "label": "🩸 Lifesteal +2.5%", "desc": "Heal from damage dealt", "rarity": "uncommon"},
-	{"type": "stat", "key": "lifesteal", "value": 0.05, "label": "🩸 Lifesteal +5%", "desc": "Significant healing from damage", "rarity": "rare"},
-	{"type": "stat", "key": "armor", "value": 5, "label": "🛡️ Armor +5", "desc": "Reduces incoming damage", "rarity": "common"},
-	{"type": "stat", "key": "armor", "value": 10, "label": "🛡️ Armor +10", "desc": "Major damage reduction", "rarity": "uncommon"},
+	{"type": "stat", "key": "lifesteal", "value": 0.015, "label": "🩸 Lifesteal +1.5%", "desc": "Heal from damage dealt", "rarity": "uncommon"},
+	{"type": "stat", "key": "lifesteal", "value": 0.03, "label": "🩸 Lifesteal +3%", "desc": "Significant healing from damage", "rarity": "rare"},
+	{"type": "stat", "key": "armor", "value": 3, "label": "🛡️ Armor +3", "desc": "Reduces incoming damage", "rarity": "common"},
+	{"type": "stat", "key": "armor", "value": 6, "label": "🛡️ Armor +6", "desc": "Major damage reduction", "rarity": "uncommon"},
 	
 	# ==================== UTILITY STATS ====================
 	{"type": "stat", "key": "speed", "value": 0.10, "label": "👟 Move Speed +10%", "desc": "Move faster to dodge enemies", "rarity": "common"},

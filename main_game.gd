@@ -10,6 +10,10 @@ const VOID_MITE_SCENE = preload("res://VoidMite.tscn")
 const NEBULITH_COLOSSUS_SCENE = preload("res://NebulithColossus.tscn")
 const DARK_MAGE_SCENE = preload("res://DarkMage.tscn")
 const ASTEROID_SCENE  = preload("res://Asteroid.tscn")
+# NEW: Advanced mob sprites
+const PURPLE_ALIEN_SCENE = preload("res://PurpleAlien.tscn")
+const SPACE_DRAGON2_SCENE = preload("res://SpaceDragon2.tscn")
+const SPACE_DRAGON_SCENE = preload("res://SpaceDragon.tscn")
 const XP_VIAL_SCENE   = preload("res://experience_vial.tscn")
 const CHEST_SCENE     = preload("res://Chest.tscn")
 const ITEM_UI_SCENE   = preload("res://ItemUI.tscn")
@@ -38,6 +42,7 @@ var is_level_up_open: bool = false
 var game_time: float = 0.0
 var spawn_rate: float = 2.5
 var difficulty_mult: float = 1.0
+var mob_damage_mult: float = 1.0  # NEW: Mob damage scaling
 
 const TANKIER_INTERVAL = 90.0
 const FIRST_BOSS_TIME  = 150.0
@@ -151,10 +156,16 @@ func _process(delta: float) -> void:
 				enemies_killed
 			)
 
+	# Every 90 seconds: Increase HP/spawn rate
 	if fmod(game_time, TANKIER_INTERVAL) < delta:
 		difficulty_mult += 1.0
 		spawn_rate = max(0.5, spawn_rate * 0.88)
 		print("⚡ DIFFICULTY UP! HP×%.1f | Spawn: %.2fs" % [difficulty_mult, spawn_rate])
+	
+	# NEW: Every 4 minutes (240 seconds): Increase mob damage
+	if fmod(game_time, 240.0) < delta:
+		mob_damage_mult += 0.5  # +50% damage every 4 mins
+		print("🔥 MOB DAMAGE UP! ×%.1f" % mob_damage_mult)
 
 	if not first_boss_spawned and game_time >= FIRST_BOSS_TIME:
 		spawn_boss()
@@ -169,7 +180,12 @@ func _process(delta: float) -> void:
 				boss_spawn_times.append(game_time)
 
 	if game_time >= APOCALYPSE_TIME and not has_node("ApocalypseMob"):
-		spawn_apocalypse_mob()
+		spawn_mega_final_boss()
+	
+	# NEW: Mini-boss spawning system (starts after first boss at 2:30)
+	if game_time >= FIRST_BOSS_TIME and fmod(game_time - FIRST_BOSS_TIME, 120.0) < delta:  # Every 2 minutes after first boss
+		if not has_boss_alive():  # Don't spawn mini-boss if regular boss is active
+			spawn_mini_boss()
 
 	spawn_timer += delta
 	if spawn_timer >= spawn_rate:
@@ -195,6 +211,13 @@ func spawn_mob() -> void:
 	if current_enemy_count >= MAX_ENEMIES_ON_SCREEN:
 		return
 	
+	# NEW: Mob replacement system based on time
+	var mob_scene = MOB_SCENE  # Default slime
+	
+	# Replace slimes with purple aliens at 8:30 (510 seconds)
+	if game_time >= 510:
+		mob_scene = PURPLE_ALIEN_SCENE
+	
 	var enemies_to_spawn = 1
 	if game_time > 180:
 		enemies_to_spawn = randi_range(1, 2)
@@ -203,17 +226,29 @@ func spawn_mob() -> void:
 	
 	for i in range(enemies_to_spawn):
 		if current_enemy_count < MAX_ENEMIES_ON_SCREEN:
-			spawn_enemy(MOB_SCENE)
+			spawn_enemy(mob_scene)
 
 func spawn_void_mite() -> void:
 	if not is_instance_valid(player):
 		return
-	spawn_enemy(VOID_MITE_SCENE)
+	
+	# NEW: Replace void mites with space dragon 2 at 10:00 (600 seconds)
+	var mite_scene = VOID_MITE_SCENE
+	if game_time >= 600:
+		mite_scene = SPACE_DRAGON2_SCENE
+	
+	spawn_enemy(mite_scene)
 
 func spawn_colossus() -> void:
 	if not is_instance_valid(player):
 		return
-	spawn_enemy(NEBULITH_COLOSSUS_SCENE)
+	
+	# NEW: Replace colossus with space dragon at 20:00 (1200 seconds)
+	var colossus_scene = NEBULITH_COLOSSUS_SCENE
+	if game_time >= 1200:
+		colossus_scene = SPACE_DRAGON_SCENE
+	
+	spawn_enemy(colossus_scene)
 
 func spawn_dark_mage() -> void:
 	if not is_instance_valid(player):
@@ -264,6 +299,10 @@ func spawn_enemy(enemy_scene: PackedScene) -> void:
 	mob.max_health  *= difficulty_mult
 	mob.speed       *= (1.0 + game_time / 600.0)
 	mob.xp_value    += int(game_time / 30.0)
+	
+	# NEW: Apply mob damage scaling
+	if mob.has_method("set_damage_multiplier"):
+		mob.set_damage_multiplier(mob_damage_mult)
 
 	var screen_size = get_viewport_rect().size
 	var cam_pos = player.global_position
@@ -335,28 +374,97 @@ func spawn_boss() -> void:
 	
 	print("👹 BOSS SPAWNED at %.1f seconds! HP: %.0f" % [game_time, boss.health])
 
-func spawn_apocalypse_mob() -> void:
+# NEW: Mega Final Boss - takes up over half the screen, fast, one-shot damage
+func spawn_mega_final_boss() -> void:
 	if not is_instance_valid(player):
 		return
 		
-	var apoc = MOB_SCENE.instantiate()
-	apoc.name = "ApocalypseMob"
-	apoc.add_to_group("boss")
-	apoc.scale = Vector2(8, 8)
-	apoc.health = 5000.0 * difficulty_mult
-	apoc.max_health = 5000.0 * difficulty_mult
-	apoc.speed = 200.0
-	apoc.xp_value = 1000
+	var mega_boss = MOB_SCENE.instantiate()
+	mega_boss.name = "MegaFinalBoss"
+	mega_boss.add_to_group("boss")
+	mega_boss.add_to_group("mega_boss")
+	mega_boss.scale = Vector2(15, 15)  # MASSIVE - over half the screen
+	mega_boss.health = 50000.0 * difficulty_mult  # Insane HP pool
+	mega_boss.max_health = 50000.0 * difficulty_mult
+	mega_boss.speed = 250.0  # Fast enough to catch player
+	mega_boss.xp_value = 5000
+	
+	# One-shot damage marker
+	if mega_boss.has_method("set_damage_multiplier"):
+		mega_boss.set_damage_multiplier(9999.0)  # Instant death on contact
 
 	var screen_size = get_viewport_rect().size
-	apoc.global_position = player.global_position + Vector2(screen_size.x * 0.5, screen_size.y * 0.5)
+	mega_boss.global_position = player.global_position + Vector2(screen_size.x * 0.5, screen_size.y * 0.5)
 	
-	add_child(apoc)
+	add_child(mega_boss)
 	
-	if apoc.has_signal("died"):
-		apoc.died.connect(_on_mob_died.bind(apoc))
+	if mega_boss.has_signal("died"):
+		mega_boss.died.connect(_on_mega_boss_killed.bind(mega_boss))
 	
-	print("💀 APOCALYPSE MOB SPAWNED!")
+	print("💀💀💀 MEGA FINAL BOSS SPAWNED! ONE-SHOT KILL ON CONTACT! 💀💀💀")
+
+func _on_mega_boss_killed(boss: Node):
+	if not is_instance_valid(boss):
+		return
+	
+	# Killing the mega boss ends the run immediately
+	print("🎉 MEGA BOSS DEFEATED! YOU WIN! 🎉")
+	await get_tree().create_timer(1.0).timeout
+	_on_player_death()  # Show game over screen with victory stats
+
+# NEW: Mini-boss spawning system - each mob type gets a mini-boss variant
+func spawn_mini_boss() -> void:
+	if not is_instance_valid(player):
+		return
+	
+	# Determine which mini-boss to spawn based on game time
+	var boss_scene = MOB_SCENE  # Default
+	var boss_name = "Slime"
+	var boss_scale = Vector2(3, 3)
+	
+	if game_time < 510:  # 0-8:30 - Slime mini-boss
+		boss_scene = MOB_SCENE
+		boss_name = "SlimeKing"
+	elif game_time < 600:  # 8:30-10:00 - Void Mite mini-boss
+		boss_scene = VOID_MITE_SCENE
+		boss_name = "VoidMother"
+	elif game_time < 1200:  # 10:00-20:00 - Colossus mini-boss
+		boss_scene = NEBULITH_COLOSSUS_SCENE
+		boss_name = "ColossusPrime"
+		boss_scale = Vector2(4, 4)
+	elif game_time < APOCALYPSE_TIME:  # 20:00-30:00 - Dark Mage mini-boss
+		boss_scene = DARK_MAGE_SCENE
+		boss_name = "ArchMage"
+	else:  # After 30:00 - Purple Alien mini-boss
+		# Will use purple alien scene when we create it
+		boss_scene = DARK_MAGE_SCENE
+		boss_name = "AlienOverlord"
+	
+	var mini_boss = boss_scene.instantiate()
+	mini_boss.name = boss_name
+	mini_boss.add_to_group("mini_boss")
+	mini_boss.scale = boss_scale
+	
+	# Mini-boss stats: 5x normal mob health
+	mini_boss.health = mini_boss.base_health * 5.0 * difficulty_mult
+	mini_boss.max_health = mini_boss.health
+	mini_boss.speed = mini_boss.base_speed * 1.3  # 30% faster
+	mini_boss.xp_value = 50  # Good XP reward
+	
+	var screen_size = get_viewport_rect().size
+	mini_boss.global_position = player.global_position + Vector2(screen_size.x * 0.5, screen_size.y * 0.5)
+	
+	add_child(mini_boss)
+	
+	if mini_boss.has_signal("died"):
+		mini_boss.died.connect(_on_mob_died.bind(mini_boss))
+	
+	if ENEMY_HEALTH_BAR:
+		var health_bar = ENEMY_HEALTH_BAR.instantiate()
+		health_bar.set_target(mini_boss)
+		ui_layer.add_child(health_bar)
+	
+	print("👑 MINI-BOSS SPAWNED: %s" % boss_name)
 
 func has_boss_alive() -> bool:
 	var bosses = get_tree().get_nodes_in_group("boss")

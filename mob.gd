@@ -21,8 +21,12 @@ var level_scaling_applied: bool = false
 var is_colossus: bool = false  # Special flag for tanky enemy
 
 var active_dots: Dictionary = {}
+var damage_multiplier: float = 1.0  # NEW: Damage scaling over time
 
 @onready var player = get_node("/root/MainGame/Player")
+
+func set_damage_multiplier(mult: float):
+	damage_multiplier = mult
 
 func _ready():
 	add_to_group("mob")  # Important for grenades to find enemies!

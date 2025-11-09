@@ -1,0 +1,19 @@
+[gd_scene load_steps=4 format=3 uid="uid://b4k2m3n5p6q7r"]
+
+[ext_resource type="Script" uid="uid://crqn8bow1qs3x" path="res://mob.gd" id="1_mob"]
+[ext_resource type="Texture2D" uid="uid://c8j7k6m5n4p3q" path="res://purple alien.png" id="2_sprite"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_purplealien"]
+radius = 25.0
+
+[node name="PurpleAlien" type="CharacterBody2D" groups=["mob"]]
+collision_layer = 2
+collision_mask = 0
+script = ExtResource("1_mob")
+
+[node name="PurpleAlienSprite" type="Sprite2D" parent="."]
+scale = Vector2(0.35, 0.35)
+texture = ExtResource("2_sprite")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_purplealien")

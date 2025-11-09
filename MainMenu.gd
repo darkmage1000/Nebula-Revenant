@@ -5,6 +5,8 @@ var play_button: Button
 var unlocks_button: Button
 var quit_button: Button
 var title_label: Label
+var volume_slider: HSlider
+var mute_button: Button
 
 var save_manager = null
 
@@ -15,6 +17,17 @@ func _ready():
 	# (Game may be paused from death screen, pause menu, etc.)
 	get_tree().paused = false
 	print("✅ Game unpaused")
+	
+	# Run audio diagnostic
+	var diagnostic = load("res://AudioDiagnostic.gd").new()
+	diagnostic.name = "AudioDiagnostic"
+	add_child(diagnostic)
+	
+	# Start music
+	if has_node("/root/AudioManager"):
+		var audio_manager = get_node("/root/AudioManager")
+		audio_manager.play_music()
+		print("🎵 Music started")
 
 	# Get SaveManager reference
 	if has_node("/root/SaveManager"):
@@ -28,6 +41,9 @@ func _ready():
 	unlocks_button = get_node_or_null("CenterContainer/VBoxContainer/UnlocksButton")
 	quit_button = get_node_or_null("CenterContainer/VBoxContainer/QuitButton")
 	title_label = get_node_or_null("TitleContainer/TitleLabel")
+	
+	# Setup audio controls
+	setup_audio_controls()
 	
 	# Debug print to see what we found
 	print("Play button: ", play_button)
@@ -62,6 +78,77 @@ func _ready():
 		print("❌ Title label not found!")
 	
 	print("✅ Main Menu loaded!")
+
+func setup_audio_controls():
+	if not has_node("/root/AudioManager"):
+		print("⚠️ AudioManager not found")
+		return
+	
+	var audio_manager = get_node("/root/AudioManager")
+	
+	# Create audio controls container
+	var audio_container = VBoxContainer.new()
+	audio_container.name = "AudioControls"
+	audio_container.add_theme_constant_override("separation", 10)
+	
+	# Volume label
+	var volume_label = Label.new()
+	volume_label.text = "🔊 Music Volume"
+	volume_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	volume_label.add_theme_font_size_override("font_size", 18)
+	audio_container.add_child(volume_label)
+	
+	# Volume slider
+	volume_slider = HSlider.new()
+	volume_slider.min_value = 0.0
+	volume_slider.max_value = 1.0
+	volume_slider.step = 0.01
+	volume_slider.custom_minimum_size = Vector2(300, 40)
+	# Connect signal BEFORE setting value to avoid triggering it
+	volume_slider.value_changed.connect(_on_volume_changed)
+	# Set value without triggering signal by using set_value_no_signal
+	volume_slider.set_value_no_signal(audio_manager.get_volume())
+	audio_container.add_child(volume_slider)
+	
+	# Mute button
+	mute_button = Button.new()
+	update_mute_button_text()
+	mute_button.custom_minimum_size = Vector2(300, 50)
+	mute_button.add_theme_font_size_override("font_size", 18)
+	mute_button.pressed.connect(_on_mute_pressed)
+	audio_container.add_child(mute_button)
+	
+	# Position in bottom right corner (well away from center buttons)
+	audio_container.position = Vector2(
+		get_viewport_rect().size.x - 330,
+		get_viewport_rect().size.y - 160
+	)
+	
+	add_child(audio_container)
+	print("✅ Audio controls added")
+
+func update_mute_button_text():
+	if not mute_button or not has_node("/root/AudioManager"):
+		return
+	
+	var audio_manager = get_node("/root/AudioManager")
+	if audio_manager.is_music_muted():
+		mute_button.text = "🔇 Unmute Music"
+	else:
+		mute_button.text = "🔊 Mute Music"
+
+func _on_volume_changed(value: float):
+	if has_node("/root/AudioManager"):
+		var audio_manager = get_node("/root/AudioManager")
+		audio_manager.set_volume(value)
+		print("🔊 Volume changed to: %.2f" % value)
+
+func _on_mute_pressed():
+	if has_node("/root/AudioManager"):
+		var audio_manager = get_node("/root/AudioManager")
+		audio_manager.toggle_mute()
+		update_mute_button_text()
+		print("🔇 Mute toggled")
 
 func animate_title():
 	# Pulse animation for title
