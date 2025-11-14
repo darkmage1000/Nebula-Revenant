@@ -57,8 +57,8 @@ func _on_body_entered(body):
 		queue_free()
 
 func _on_area_entered(area):
-	# Destroy on hitting asteroids or other obstacles
-	if area.is_in_group("asteroid"):
+	# Destroy on hitting obstacles (asteroids or flowers)
+	if area.is_in_group("asteroid") or area.is_in_group("flower"):
 		queue_free()
 
 func create_fireball_texture(radius: float, color: Color) -> ImageTexture:

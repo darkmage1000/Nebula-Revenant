@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3 uid="uid://acid_pool_entity_scene"]
+
+[ext_resource type="Script" path="res://AcidPoolEntity.gd" id="1"]
+
+[node name="AcidPoolEntity" type="Area2D"]
+collision_layer = 0
+collision_mask = 2
+script = ExtResource("1")

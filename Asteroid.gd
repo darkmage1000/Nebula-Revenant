@@ -7,13 +7,13 @@ var health: float = 15.0
 var max_health: float = 15.0
 
 # Drop chances (mutually exclusive)
-const DROP_SHARD_CHANCE = 0.80  # 80% drop shards
-const DROP_HEALTHPACK_CHANCE = 0.05  # 5% drop health pack
-const DROP_POWERUP_CHANCE = 0.15  # 15% drop powerup (INCREASED from 8%)
+const DROP_SHARD_CHANCE = 0.30  # 30% drop shards (further reduced for slower progression)
+const DROP_HEALTHPACK_CHANCE = 0.10  # 10% drop health pack
+const DROP_POWERUP_CHANCE = 0.60  # 60% drop powerup
 
 # Preload scenes
-var NEBULA_SHARD_SCENE = null
-var POWERUP_SCENE = null
+const NEBULA_SHARD_SCENE = preload("res://NebulaShard.tscn")
+const POWERUP_SCENE = preload("res://Powerup.tscn")
 
 var rotation_speed: float = 0.0
 
@@ -21,20 +21,7 @@ func _ready():
 	add_to_group("asteroid")
 	collision_layer = 8
 	collision_mask = 1
-	
-	# Try to load scenes
-	if ResourceLoader.exists("res://NebulaShard.tscn"):
-		NEBULA_SHARD_SCENE = load("res://NebulaShard.tscn")
-		print("✅ NebulaShard scene loaded")
-	else:
-		print("❌ NebulaShard scene not found")
-	
-	if ResourceLoader.exists("res://Powerup.tscn"):
-		POWERUP_SCENE = load("res://Powerup.tscn")
-		print("✅ Powerup scene loaded")
-	else:
-		print("❌ Powerup scene not found")
-	
+
 	# Create visual sprite if doesn't exist
 	if not has_node("Sprite2D"):
 		var sprite = Sprite2D.new()
@@ -90,18 +77,16 @@ func spawn_drops():
 	print("🎲 Drop roll: %.2f" % roll)
 
 	if roll < DROP_SHARD_CHANCE:
-		# 80% chance for shards
+		# 50% chance for shards (reduced for slower progression)
 		print("💎 Spawning shards...")
-		if NEBULA_SHARD_SCENE:
-			var shard_count = randi_range(1, 4)
-			for i in range(shard_count):
-				var shard = NEBULA_SHARD_SCENE.instantiate()
-				var offset = Vector2(randf_range(-30, 30), randf_range(-30, 30))
-				shard.global_position = drop_position + offset
-				if shard.has_method("set") and "value" in shard:
-					shard.value = 1
-				get_parent().add_child(shard)
-			print("✅ Spawned %d shards" % shard_count)
+		var shard_count = randi_range(1, 2)  # Reduced from 1-4 to 1-2
+		for i in range(shard_count):
+			var shard = NEBULA_SHARD_SCENE.instantiate()
+			var offset = Vector2(randf_range(-30, 30), randf_range(-30, 30))
+			shard.global_position = drop_position + offset
+			shard.value = 1
+			get_parent().add_child(shard)
+		print("✅ Spawned %d shards at position %v" % [shard_count, drop_position])
 
 	elif roll < DROP_SHARD_CHANCE + DROP_HEALTHPACK_CHANCE:
 		# 5% chance for health pack
@@ -142,66 +127,18 @@ func spawn_healthpack(pos: Vector2):
 
 func spawn_powerup(pos: Vector2):
 	print("⭐ spawn_powerup() called at position: ", pos)
-	
+
 	# Randomly choose powerup type
 	var powerup_types = ["invincible", "magnet", "attack_speed", "nuke"]
 	var powerup_type = powerup_types[randi() % powerup_types.size()]
 	print("   Selected type: ", powerup_type)
-	
-	if POWERUP_SCENE:
-		print("   ✅ Using Powerup.tscn")
-		var powerup = POWERUP_SCENE.instantiate()
-		powerup.global_position = pos
-		powerup.powerup_type = powerup_type
-		get_parent().add_child(powerup)
-		print("   ✅ Powerup spawned successfully!")
-	else:
-		print("   ⚠️ No Powerup.tscn, creating fallback powerup")
-		# Create fallback powerup if scene doesn't exist
-		var powerup = Area2D.new()
-		powerup.global_position = pos
-		powerup.add_to_group("powerup")
-		powerup.set_meta("powerup_type", powerup_type)
-		powerup.collision_layer = 8
-		powerup.collision_mask = 4
-		
-		# Visual based on type
-		var color = Color(1, 1, 0, 1)
-		var size = 30
-		match powerup_type:
-			"invincible":
-				color = Color(1, 1, 0, 1)
-			"magnet":
-				color = Color(0, 1, 1, 1)
-			"attack_speed":
-				color = Color(1, 0, 1, 1)
-			"nuke":
-				color = Color(1, 0.5, 0, 1)
-		
-		var sprite = Sprite2D.new()
-		var star_texture = create_star_texture(size, color)
-		sprite.texture = star_texture
-		powerup.add_child(sprite)
-		
-		# Add glow effect
-		var glow = Sprite2D.new()
-		glow.texture = create_circle_texture(size + 10, Color(color.r, color.g, color.b, 0.3))
-		glow.z_index = -1
-		powerup.add_child(glow)
-		
-		# Collision
-		var collision = CollisionShape2D.new()
-		var shape = CircleShape2D.new()
-		shape.radius = size
-		collision.shape = shape
-		powerup.add_child(collision)
-		
-		# Add floating animation
-		add_floating_animation(powerup)
-		add_pulse_animation(glow)
-		
-		get_parent().add_child(powerup)
-		print("   ✅ Fallback powerup created!")
+
+	print("   ✅ Using Powerup.tscn")
+	var powerup = POWERUP_SCENE.instantiate()
+	powerup.global_position = pos
+	powerup.powerup_type = powerup_type
+	get_parent().add_child(powerup)
+	print("   ✅ Powerup spawned successfully!")
 
 func create_explosion_particles():
 	# Simple particle explosion

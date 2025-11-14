@@ -290,21 +290,22 @@ func _on_body_entered(body: Node2D):
 		# Immediately disable monitoring to prevent double-triggers
 		set_deferred("monitoring", false)
 		set_deferred("monitorable", false)
-		open_chest()
+		open_chest(body)
 
-func open_chest():
+func open_chest(player: Node2D):
+	print("🎁 OPEN CHEST CALLED")
+	print("   Game paused: %s" % get_tree().paused)
+	print("   Is opened: %s" % is_opened)
+
 	if is_opened:
 		return
 
 	is_opened = true
 
-	# CRITICAL: Disable all collision immediately
-	monitoring = false
-	monitorable = false
+	# Disable processing (collision already disabled via set_deferred in _on_body_entered)
 	set_physics_process(false)
 	set_process(false)
 
-	# DON'T PAUSE - just apply item directly
 	# Roll for rarity first
 	rolled_rarity = roll_rarity()
 
@@ -317,9 +318,25 @@ func open_chest():
 		play_open_animation()
 		return
 
-	# Apply item immediately
-	apply_item_to_player()
+	# Check for eligible evolutions BEFORE applying item
+	print("🔍 Checking for eligible evolutions...")
+	var eligible_evolutions = get_eligible_evolutions(player)
+	print("✅ Found %d eligible evolutions" % eligible_evolutions.size())
 
+	if eligible_evolutions.size() > 0:
+		print("📋 Showing evolution menu...")
+		# Show evolution menu (it will pause the game after physics frame completes)
+		show_evolution_menu(player, eligible_evolutions)
+		print("📋 show_evolution_menu() returned")
+	else:
+		# No evolutions available - show item UI
+		print("📦 No evolutions, applying item normally...")
+		apply_item_to_player()
+		track_item_collection()
+		play_open_animation()
+		show_item_ui()
+
+func track_item_collection():
 	# Track in main game
 	var main_game = get_tree().root.get_node_or_null("MainGame")
 	if is_instance_valid(main_game) and "items_collected" in main_game:
@@ -331,8 +348,93 @@ func open_chest():
 			})
 			print("✨ Collected [%s] %s: %s" % [rolled_rarity.to_upper(), selected_item.name, selected_item.description])
 
-	# Visual feedback
-	play_open_animation()
+func get_eligible_evolutions(player: Node2D) -> Array:
+	var eligible = []
+
+	if not player or not player.has_method("get_weapon_level"):
+		print("⚠️ Evolution check: player invalid or missing get_weapon_level method")
+		return eligible
+
+	# Only check weapons the player currently has
+	var current_weapons = player.player_stats.get("current_weapons", [])
+	print("🔍 Checking evolutions for %d weapons: %s" % [current_weapons.size(), current_weapons])
+
+	for weapon_key in current_weapons:
+		# Skip if weapon doesn't have evolution data
+		if not player.weapon_evolutions.has(weapon_key):
+			print("   ⚠️ %s: No evolution data" % weapon_key)
+			continue
+
+		var weapon_level = player.get_weapon_level(weapon_key)
+		var already_evolved = player.weapon_evolutions[weapon_key]["evolved"]
+
+		print("   🔸 %s: Level %d, Evolved: %s" % [weapon_key, weapon_level, already_evolved])
+
+		if weapon_level >= 10 and not already_evolved:
+			# This weapon can evolve
+			var paths = player.weapon_evolutions[weapon_key]["paths"]
+			print("   ✅ %s eligible for evolution! (%d paths)" % [weapon_key, paths.size()])
+			for path_id in paths.keys():
+				eligible.append({
+					"weapon_key": weapon_key,
+					"evolution_id": path_id,
+					"data": paths[path_id]
+				})
+
+	print("🎯 Total eligible evolutions: %d" % eligible.size())
+	return eligible
+
+func show_evolution_menu(player: Node2D, eligible: Array):
+	# Randomly pick up to 3 evolution options
+	eligible.shuffle()
+	var selected_options = eligible.slice(0, min(3, eligible.size()))
+
+	print("📋 Creating evolution menu with %d options" % selected_options.size())
+
+	# Create evolution menu UI
+	var evolution_menu = preload("res://EvolutionMenu.tscn").instantiate()
+	evolution_menu.player = player
+
+	# Connect signals
+	evolution_menu.evolution_selected.connect(func(weapon_key, evolution_id):
+		print("✅ Evolution selected: %s -> %s" % [weapon_key, evolution_id])
+		player.evolve_weapon(weapon_key, evolution_id)
+		apply_item_to_player()
+		track_item_collection()
+		evolution_menu.queue_free()
+		get_tree().paused = false
+		play_open_animation()
+	)
+
+	evolution_menu.skip_pressed.connect(func():
+		print("⏭️ Evolution skipped")
+		apply_item_to_player()
+		track_item_collection()
+		evolution_menu.queue_free()
+		get_tree().paused = false
+		play_open_animation()
+	)
+
+	# Add to UILayer so it renders on top of everything
+	var ui_layer = get_tree().root.get_node_or_null("MainGame/UILayer")
+	if not ui_layer:
+		print("⚠️ ERROR: UILayer not found! Trying root instead...")
+		get_tree().root.add_child(evolution_menu)
+	else:
+		ui_layer.add_child(evolution_menu)
+		print("✅ Evolution menu added to UILayer")
+
+	print("   Visible: %s" % evolution_menu.visible)
+	print("   Layer: %s" % evolution_menu.layer)
+	print("   Parent: %s" % evolution_menu.get_parent().name)
+
+	# Set available evolutions - menu will pause AFTER rendering
+	print("⏸️ Setting available evolutions...")
+	evolution_menu.set_available_evolutions(selected_options)
+
+	# CanvasLayer handles rendering layer automatically
+	print("   Layer: %d (CanvasLayer always renders on top)" % evolution_menu.layer)
+	print("✅ Setup complete - menu will pause when ready")
 
 func roll_rarity() -> String:
 	# Calculate total weight
@@ -447,3 +549,33 @@ func play_open_animation():
 	)
 
 	print("🎬 Chest animation started, will free in 0.3s")
+
+func show_item_ui():
+	# Show the ItemUI to display what the player got
+	const ITEM_UI_SCENE = preload("res://ItemUI.tscn")
+
+	# PAUSE GAME to show item
+	get_tree().paused = true
+
+	# Get UILayer
+	var ui_layer = get_tree().root.get_node_or_null("MainGame/UILayer")
+	if not ui_layer:
+		print("ERROR: Could not find UILayer for ItemUI!")
+		get_tree().paused = false  # Unpause if we can't show UI
+		return
+
+	# Create item UI
+	var item_ui = ITEM_UI_SCENE.instantiate()
+	item_ui.process_mode = Node.PROCESS_MODE_ALWAYS  # Allow UI to work while paused
+	item_ui.set_item(selected_item, rolled_rarity)
+
+	# Connect take button to unpause
+	if item_ui.has_node("Panel/TakeButton"):
+		var take_button = item_ui.get_node("Panel/TakeButton")
+		take_button.pressed.connect(func():
+			get_tree().paused = false
+			print("⏸️ Game unpaused after taking item")
+		)
+
+	ui_layer.add_child(item_ui)
+	print("✨ Showing item UI for: %s" % selected_item.get("name", "Unknown"))

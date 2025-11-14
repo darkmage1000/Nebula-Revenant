@@ -25,10 +25,10 @@ func _on_body_entered(body):
 	if body.is_in_group("mob"):
 		apply_hit(body)
 
-# Handle collision with Area2D asteroids
+# Handle collision with Area2D obstacles (asteroids, flowers)
 func _on_area_entered(area):
-	if area.is_in_group("asteroid"):
-		apply_asteroid_hit(area)
+	if area.is_in_group("asteroid") or area.is_in_group("flower"):
+		apply_obstacle_hit(area)
 
 func apply_hit(mob):
 	if not is_instance_valid(mob): return
@@ -69,12 +69,12 @@ func apply_hit(mob):
 	else:
 		queue_free()
 
-func apply_asteroid_hit(asteroid):
-	if not is_instance_valid(asteroid): return
-	
-	# Damage asteroid
-	if asteroid.has_method("take_damage"):
-		asteroid.take_damage(damage)
-	
-	# Bullets always destroyed by asteroids (no pierce)
+func apply_obstacle_hit(obstacle):
+	if not is_instance_valid(obstacle): return
+
+	# Damage obstacle (asteroid or flower)
+	if obstacle.has_method("take_damage"):
+		obstacle.take_damage(damage)
+
+	# Bullets always destroyed by obstacles (no pierce)
 	queue_free()
