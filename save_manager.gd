@@ -22,7 +22,10 @@ var save_data = {
 	# CHARACTER UNLOCK SYSTEM - NEW!
 	"unlocks": {
 		"swordmaiden_unlocked": false,
-		"swordmaiden_challenge_best": 0  # Best level reached for unlock challenge
+		"swordmaiden_challenge_best": 0,  # Best level reached for unlock challenge
+		"grassy_field_unlocked": false,  # Unlocked by surviving 30 minutes
+		"alien_monk_unlocked": false,  # Unlocked by surviving 30:00 on grassy_field + 750 shards
+		"alien_monk_challenge_complete": false  # Survived 30:00 on grassy_field
 	},
 	
 	# Permanent upgrades
@@ -35,6 +38,16 @@ var save_data = {
 		"currency_boost": 0,
 		"starting_weapon_slot": 0,
 		"reroll_count": 0,
+		# NEW: Meta-progression stat upgrades
+		"attack_speed_boost": 0,  # Max 4 levels
+		"armor_boost": 0,  # Max 4 levels
+		"crit_chance_boost": 0,  # Max 4 levels
+		"crit_damage_boost": 0,  # Max 4 levels
+		"aoe_boost": 0,  # Max 4 levels
+		"revives": 0,  # Max 2 levels
+		# NEW: Level-up utility upgrades
+		"banish_tier": 0,  # Max 4 levels (0=locked, 1-4=uses per run)
+		"skip_tier": 0,  # Max 4 levels (0=locked, 1-4=uses per run)
 	}
 }
 
@@ -50,7 +63,10 @@ func ensure_unlocks_data():
 	if not save_data.has("unlocks"):
 		save_data.unlocks = {
 			"swordmaiden_unlocked": false,
-			"swordmaiden_challenge_best": 0
+			"swordmaiden_challenge_best": 0,
+			"grassy_field_unlocked": false,
+			"alien_monk_unlocked": false,
+			"alien_monk_challenge_complete": false
 		}
 		save_game()
 		print("✅ Added unlocks data to save file")
@@ -60,6 +76,12 @@ func ensure_unlocks_data():
 			save_data.unlocks.swordmaiden_unlocked = false
 		if not save_data.unlocks.has("swordmaiden_challenge_best"):
 			save_data.unlocks.swordmaiden_challenge_best = 0
+		if not save_data.unlocks.has("grassy_field_unlocked"):
+			save_data.unlocks.grassy_field_unlocked = false
+		if not save_data.unlocks.has("alien_monk_unlocked"):
+			save_data.unlocks.alien_monk_unlocked = false
+		if not save_data.unlocks.has("alien_monk_challenge_complete"):
+			save_data.unlocks.alien_monk_challenge_complete = false
 		save_game()
 
 func save_game():
@@ -239,6 +261,85 @@ func purchase_upgrade(upgrade_name: String, cost: int) -> bool:
 # CHARACTER UNLOCK SYSTEM - NEW!
 # ==============================================================
 
+# Check if Alien Monk is unlocked
+func is_alien_monk_unlocked() -> bool:
+	if not save_data.has("unlocks"):
+		return false
+	return save_data.unlocks.get("alien_monk_unlocked", false)
+
+# Check if Alien Monk challenge is complete (survived 30:00 on grassy_field)
+func is_alien_monk_challenge_complete() -> bool:
+	if not save_data.has("unlocks"):
+		return false
+	return save_data.unlocks.get("alien_monk_challenge_complete", false)
+
+# Mark Alien Monk challenge as complete (called when player survives 30:00 on grassy_field)
+func complete_alien_monk_challenge() -> bool:
+	if not save_data.has("unlocks"):
+		save_data.unlocks = {}
+
+	# Check if already complete
+	if save_data.unlocks.get("alien_monk_challenge_complete", false):
+		return false  # Already completed, no notification
+
+	# Mark as complete
+	save_data.unlocks.alien_monk_challenge_complete = true
+	save_game()
+	print("✨ ALIEN MONK CHALLENGE COMPLETE! Can now purchase for 750 shards!")
+	return true  # Return true to show notification
+
+# Try to purchase Alien Monk unlock (750 shards)
+func try_unlock_alien_monk() -> bool:
+	# Must complete challenge first
+	if not is_alien_monk_challenge_complete():
+		print("❌ Challenge not complete! Survive 30:00 on Grassy Field first.")
+		return false
+
+	# Must have enough shards
+	if save_data.total_shards < 750:
+		print("❌ Not enough shards! Need 750, have %d" % save_data.total_shards)
+		return false
+
+	# Purchase!
+	if spend_shards(750):
+		print("💰 Spent 750 shards for Alien Monk unlock")
+		save_data.unlocks.alien_monk_unlocked = true
+
+		# CRITICAL: Save immediately and verify it worked
+		if save_game():
+			print("🧙 ALIEN MONK UNLOCKED AND SAVED!")
+			print("✅ Unlock permanently saved to disk")
+			return true
+		else:
+			print("❌ ERROR: Failed to save unlock! Reverting...")
+			# Revert the unlock if save failed
+			save_data.unlocks.alien_monk_unlocked = false
+			add_shards(750)  # Refund the shards
+			return false
+
+	return false
+
+# Check if grassy field map is unlocked
+func is_grassy_field_unlocked() -> bool:
+	if not save_data.has("unlocks"):
+		return false
+	return save_data.unlocks.get("grassy_field_unlocked", false)
+
+# Unlock grassy field map (called when player reaches 30 minutes)
+func unlock_grassy_field() -> bool:
+	if not save_data.has("unlocks"):
+		save_data.unlocks = {}
+
+	# Check if already unlocked
+	if save_data.unlocks.get("grassy_field_unlocked", false):
+		return false  # Already unlocked, no notification needed
+
+	# Unlock it!
+	save_data.unlocks.grassy_field_unlocked = true
+	save_game()
+	print("🌱 GRASSY FIELD MAP UNLOCKED!")
+	return true  # Return true to show unlock notification
+
 # Check if swordmaiden is unlocked
 func is_swordmaiden_unlocked() -> bool:
 	if not save_data.has("unlocks"):
@@ -335,8 +436,75 @@ func get_starting_bonuses() -> Dictionary:
 		"xp_multiplier": 1.0 + (save_data.upgrades.xp_boost * 0.10),
 		"currency_multiplier": 1.0 + (save_data.upgrades.currency_boost * 0.20),
 		"extra_weapon_slot": save_data.upgrades.starting_weapon_slot,
-		"reroll_count": save_data.upgrades.reroll_count
+		"reroll_count": save_data.upgrades.reroll_count,
+		# NEW: Meta-progression stat bonuses
+		"attack_speed_mult": save_data.upgrades.attack_speed_boost * 0.08,  # 8% per level
+		"armor": save_data.upgrades.armor_boost * 2,  # 2 armor per level
+		"crit_chance": save_data.upgrades.crit_chance_boost * 0.02,  # 2% per level
+		"crit_damage_mult": save_data.upgrades.crit_damage_boost * 0.10,  # 10% per level
+		"aoe_mult": save_data.upgrades.aoe_boost * 0.08,  # 8% per level
+		"revives": save_data.upgrades.revives  # 0, 1, or 2 revives
 	}
+
+# Get the maximum level for a specific upgrade
+func get_max_level(upgrade_name: String) -> int:
+	if upgrade_name == "revives":
+		return 2
+	elif upgrade_name == "starting_weapon_slot":
+		return 3  # 3 levels: 3→4, 4→5, 5→6 weapon slots
+	elif upgrade_name in ["attack_speed_boost", "armor_boost", "crit_chance_boost", "crit_damage_boost", "aoe_boost", "banish_tier", "skip_tier"]:
+		return 4
+	else:
+		# Legacy upgrades have no max level
+		return 999
+
+# Get the cost for the next level of an upgrade
+func get_upgrade_cost(upgrade_name: String, current_level: int) -> int:
+	var max_level = get_max_level(upgrade_name)
+
+	# Check if at max level
+	if current_level >= max_level:
+		return -1
+
+	# Revives have special costs: 1000 for level 1, 4000 for level 2
+	if upgrade_name == "revives":
+		if current_level == 0:
+			return 1000
+		elif current_level == 1:
+			return 4000
+		else:
+			return -1
+
+	# Weapon slot upgrade has expensive costs: [500, 1000, 2000]
+	if upgrade_name == "starting_weapon_slot":
+		var costs = [500, 1000, 2000]  # 3→4 costs 500, 4→5 costs 1000, 5→6 costs 2000
+		if current_level < costs.size():
+			return costs[current_level]
+		else:
+			return -1
+
+	# Stat upgrades have cumulative costs
+	if upgrade_name in ["attack_speed_boost", "armor_boost", "crit_chance_boost", "crit_damage_boost", "aoe_boost"]:
+		var costs = [100, 250, 500, 1000]
+		if current_level < costs.size():
+			return costs[current_level]
+		else:
+			return -1
+
+	# Banish/Skip tier upgrades have cumulative costs
+	if upgrade_name in ["banish_tier", "skip_tier"]:
+		var costs = [500, 1000, 2000, 4000]
+		if current_level < costs.size():
+			return costs[current_level]
+		else:
+			return -1
+
+	# Default: no cost
+	return 0
+
+# Get number of revives available
+func get_revives_count() -> int:
+	return save_data.upgrades.revives
 
 # Reset progress (for testing)
 func reset_all_progress():
@@ -349,7 +517,10 @@ func reset_all_progress():
 		"total_kills": 0,
 		"unlocks": {
 			"swordmaiden_unlocked": false,
-			"swordmaiden_challenge_best": 0
+			"swordmaiden_challenge_best": 0,
+			"grassy_field_unlocked": false,
+			"alien_monk_unlocked": false,
+			"alien_monk_challenge_complete": false
 		},
 		"upgrades": {
 			"starting_damage": 0,
@@ -360,6 +531,14 @@ func reset_all_progress():
 			"currency_boost": 0,
 			"starting_weapon_slot": 0,
 			"reroll_count": 0,
+			"attack_speed_boost": 0,
+			"armor_boost": 0,
+			"crit_chance_boost": 0,
+			"crit_damage_boost": 0,
+			"aoe_boost": 0,
+			"revives": 0,
+			"banish_tier": 0,
+			"skip_tier": 0,
 		}
 	}
 	save_game()

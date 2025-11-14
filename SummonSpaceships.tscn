@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://summon_spaceships_scene"]
+
+[ext_resource type="Script" path="res://SummonSpaceships.gd" id="1"]
+
+[node name="SummonSpaceships" type="Node2D"]
+script = ExtResource("1")

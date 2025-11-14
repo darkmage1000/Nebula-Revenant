@@ -5,17 +5,34 @@ var powerup_type: String = ""
 var powerup_name: String = ""
 var time_remaining: float = 0.0
 var powerup_color: Color = Color.WHITE
+var powerup_sprite: String = ""
 
-@onready var icon_rect: ColorRect = null
+@onready var icon_rect: Control = null
 @onready var timer_label: Label = null
 @onready var name_label: Label = null
 
 func _ready():
-	# Create colored icon box
-	icon_rect = ColorRect.new()
-	icon_rect.custom_minimum_size = Vector2(40, 40)
-	icon_rect.color = powerup_color
-	add_child(icon_rect)
+	# Create icon (sprite if available, colored box otherwise)
+	if powerup_sprite != "" and ResourceLoader.exists(powerup_sprite):
+		# Use sprite
+		print("🖼️ Loading powerup sprite: %s" % powerup_sprite)
+		var texture_rect = TextureRect.new()
+		texture_rect.custom_minimum_size = Vector2(40, 40)
+		texture_rect.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+		texture_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		texture_rect.texture = load(powerup_sprite)
+		icon_rect = texture_rect
+		add_child(icon_rect)
+		print("✅ Sprite loaded successfully")
+	else:
+		# Fallback to colored box
+		if powerup_sprite != "":
+			print("⚠️ Powerup sprite not found: %s" % powerup_sprite)
+		var color_rect = ColorRect.new()
+		color_rect.custom_minimum_size = Vector2(40, 40)
+		color_rect.color = powerup_color
+		icon_rect = color_rect
+		add_child(icon_rect)
 
 	# Create timer label inside icon
 	timer_label = Label.new()
@@ -55,11 +72,12 @@ func setup(type: String, duration: float):
 	powerup_type = type
 	time_remaining = duration
 
-	# Set name and color based on type
+	# Set name, color, and sprite based on type
 	match type:
 		"invincible":
 			powerup_name = "Shield"
 			powerup_color = Color(1, 1, 0, 0.9)
+			powerup_sprite = "res://invincible.png"
 		"magnet":
 			powerup_name = "Magnet"
 			powerup_color = Color(0, 1, 1, 0.9)

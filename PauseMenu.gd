@@ -10,6 +10,9 @@ var main_game: Node2D = null
 @onready var main_menu_button = $Panel/VBoxContainer/ButtonsContainer/MainMenuButton
 @onready var quit_button = $Panel/VBoxContainer/ButtonsContainer/QuitButton
 
+var volume_slider: HSlider
+var mute_button: Button
+
 func _ready():
 	visible = true
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -29,12 +32,152 @@ func _ready():
 		quit_button.process_mode = Node.PROCESS_MODE_ALWAYS
 
 	call_deferred("update_stats")
+	call_deferred("setup_audio_controls")
 	print("✅ Pause menu loaded!")
 
 func _input(event):
 	if event.is_action_pressed("ui_cancel"):
 		_on_resume_pressed()
 		get_viewport().set_input_as_handled()
+
+func setup_audio_controls():
+	if not has_node("/root/AudioManager"):
+		print("⚠️ AudioManager not found in pause menu")
+		return
+	
+	var audio_manager = get_node("/root/AudioManager")
+	
+	# Find or create audio controls container
+	var panel = get_node_or_null("Panel")
+	if not panel:
+		print("⚠️ Panel not found for audio controls")
+		return
+	
+	var vbox = panel.get_node_or_null("VBoxContainer")
+	if not vbox:
+		print("⚠️ VBoxContainer not found")
+		return
+	
+	# Create audio controls section
+	var audio_section = VBoxContainer.new()
+	audio_section.name = "AudioSection"
+	audio_section.add_theme_constant_override("separation", 10)
+	
+	# Audio title
+	var audio_title = Label.new()
+	audio_title.text = "♫ AUDIO SETTINGS ♫"
+	audio_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	audio_title.add_theme_font_size_override("font_size", 20)
+	audio_title.add_theme_color_override("font_color", Color(0.4, 0.8, 1, 1))
+	audio_section.add_child(audio_title)
+	
+	# Volume container with visual panel background
+	var volume_container = VBoxContainer.new()
+	volume_container.add_theme_constant_override("separation", 8)
+
+	# Volume label with icon
+	var volume_label = Label.new()
+	volume_label.text = "🔊 Music Volume"
+	volume_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	volume_label.add_theme_font_size_override("font_size", 16)
+	volume_label.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+	volume_container.add_child(volume_label)
+
+	# Slider container with min/max labels - CENTERED
+	var slider_row = HBoxContainer.new()
+	slider_row.add_theme_constant_override("separation", 10)
+	slider_row.alignment = BoxContainer.ALIGNMENT_CENTER
+
+	# Min label (0%)
+	var min_label = Label.new()
+	min_label.text = "0%"
+	min_label.add_theme_font_size_override("font_size", 12)
+	min_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7, 1))
+	slider_row.add_child(min_label)
+
+	# Volume slider - SMALLER and centered
+	volume_slider = HSlider.new()
+	volume_slider.min_value = 0.0
+	volume_slider.max_value = 1.0
+	volume_slider.step = 0.01
+	volume_slider.value = audio_manager.get_volume()
+	volume_slider.custom_minimum_size = Vector2(300, 30)  # Reduced from 400 to 300
+	volume_slider.value_changed.connect(_on_volume_changed)
+	volume_slider.process_mode = Node.PROCESS_MODE_ALWAYS
+	slider_row.add_child(volume_slider)
+
+	# Max label (100%)
+	var max_label = Label.new()
+	max_label.text = "100%"
+	max_label.add_theme_font_size_override("font_size", 12)
+	max_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7, 1))
+	slider_row.add_child(max_label)
+
+	volume_container.add_child(slider_row)
+
+	# Current volume percentage display
+	var volume_percent_label = Label.new()
+	volume_percent_label.name = "VolumePercentLabel"
+	volume_percent_label.text = "Volume: %d%%" % int(audio_manager.get_volume() * 100)
+	volume_percent_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	volume_percent_label.add_theme_font_size_override("font_size", 14)
+	volume_percent_label.add_theme_color_override("font_color", Color(0.4, 0.8, 1, 1))
+	volume_container.add_child(volume_percent_label)
+
+	# Add some padding around the entire volume section
+	var volume_margin = MarginContainer.new()
+	volume_margin.add_theme_constant_override("margin_left", 40)
+	volume_margin.add_theme_constant_override("margin_right", 40)
+	volume_margin.add_theme_constant_override("margin_top", 10)
+	volume_margin.add_theme_constant_override("margin_bottom", 10)
+	volume_margin.add_child(volume_container)
+
+	audio_section.add_child(volume_margin)
+	
+	# Mute button
+	mute_button = Button.new()
+	update_mute_button_text()
+	mute_button.custom_minimum_size = Vector2(300, 45)
+	mute_button.add_theme_font_size_override("font_size", 16)
+	mute_button.pressed.connect(_on_mute_pressed)
+	mute_button.process_mode = Node.PROCESS_MODE_ALWAYS
+	audio_section.add_child(mute_button)
+	
+	# Add separator
+	var separator = HSeparator.new()
+	audio_section.add_child(separator)
+	
+	# Insert audio section AFTER buttons
+	var buttons_container = vbox.get_node_or_null("ButtonsContainer")
+	if buttons_container:
+		var button_index = buttons_container.get_index()
+		vbox.add_child(audio_section)
+		vbox.move_child(audio_section, button_index + 1)  # +1 to put it after buttons
+		print("✅ Audio controls added to pause menu (below buttons)")
+	else:
+		vbox.add_child(audio_section)
+		print("✅ Audio controls added to pause menu (at end)")
+
+func update_mute_button_text():
+	if not mute_button or not has_node("/root/AudioManager"):
+		return
+	
+	var audio_manager = get_node("/root/AudioManager")
+	if audio_manager.is_music_muted():
+		mute_button.text = "🔇 Unmute Music"
+	else:
+		mute_button.text = "🔊 Mute Music"
+
+func _on_volume_changed(value: float):
+	if has_node("/root/AudioManager"):
+		var audio_manager = get_node("/root/AudioManager")
+		audio_manager.set_volume(value)
+
+func _on_mute_pressed():
+	if has_node("/root/AudioManager"):
+		var audio_manager = get_node("/root/AudioManager")
+		audio_manager.toggle_mute()
+		update_mute_button_text()
 
 func update_stats():
 	if not is_instance_valid(player) or not is_instance_valid(main_game):

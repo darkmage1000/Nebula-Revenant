@@ -21,9 +21,9 @@ func _ready():
 	queue_redraw()
 
 func generate_stars():
-	# Generate stars across ENTIRE massive map
+	# Generate stars across ENTIRE massive map - DENSE star field
 	for layer in range(3):
-		var num_stars = 2000 - (layer * 500)  # Many more stars for massive map
+		var num_stars = 5000 - (layer * 1500)  # Much denser stars (5000, 3500, 2000 per layer)
 		for i in range(num_stars):
 			var star = {
 				"pos": Vector2(randf() * MAP_WIDTH, randf() * MAP_HEIGHT),
@@ -35,8 +35,8 @@ func generate_stars():
 var static_nebula_positions: Array = []
 
 func generate_static_nebula():
-	# Generate nebula clouds scattered across the massive map
-	var num_clouds = 100  # Many more clouds for massive map
+	# Generate nebula clouds scattered across the massive map - MUCH MORE NEBULAS
+	var num_clouds = 300  # Triple the nebulas for richer, more detailed space
 	for i in range(num_clouds):
 		var cloud_data = {
 			"center": Vector2(

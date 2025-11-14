@@ -33,26 +33,27 @@ func _process(delta: float):
 
 # Find closest enemy within range
 func get_direction_to_closest_enemy() -> Vector2:
-	var closest_mob: Node2D = null
+	var closest_target: Node2D = null
 	var min_distance: float = 999999.0
-	const BASE_ATTACK_RANGE: float = 350.0  # REDUCED from 600 to 350
+	const BASE_ATTACK_RANGE: float = 600.0  # Shotgun has shorter range than pistol
+	var max_attack_range = BASE_ATTACK_RANGE * player.player_stats.get("attack_range_mult", 1.0)
 
-	# Apply player's attack range multiplier
-	var range_mult = player.player_stats.get("attack_range_mult", 1.0)
-	var max_attack_range = BASE_ATTACK_RANGE * range_mult
-
+	# Get all targetable entities (mobs, asteroids, and flowers)
 	var mobs: Array[Node] = get_tree().get_nodes_in_group("mob")
+	var asteroids: Array[Node] = get_tree().get_nodes_in_group("asteroid")
+	var flowers: Array[Node] = get_tree().get_nodes_in_group("flower")
+	var all_targets = mobs + asteroids + flowers
 
-	for mob in mobs:
-		if is_instance_valid(mob) and mob is Node2D:
-			var distance = global_position.distance_to(mob.global_position)
+	for target in all_targets:
+		if is_instance_valid(target) and target is Node2D:
+			var distance = global_position.distance_to(target.global_position)
 			# Only target enemies within range
 			if distance < min_distance and distance <= max_attack_range:
 				min_distance = distance
-				closest_mob = mob as Node2D
+				closest_target = target as Node2D
 
-	if is_instance_valid(closest_mob):
-		return global_position.direction_to(closest_mob.global_position)
+	if is_instance_valid(closest_target):
+		return global_position.direction_to(closest_target.global_position)
 	else:
 		return Vector2.ZERO  # Don't shoot if no enemies in range
 
