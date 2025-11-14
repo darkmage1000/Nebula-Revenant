@@ -5,15 +5,18 @@ signal died
 
 const XP_VIAL_SCENE = preload("res://experience_vial.tscn")
 const FLOATING_DMG_SCENE = preload("res://FloatingDmg.tscn")
+const POWERUP_SCENE = preload("res://Powerup.tscn")
+const NEBULA_SHARD_SCENE = preload("res://NebulaShard.tscn")
+
 const POISON_COLOR = Color(0.0, 0.8, 0.2)
 const AURA_COLOR = Color(0.1, 0.6, 1.0)
 const CRIT_COLOR = Color(1.0, 0.5, 0.0)
 const WEAPON_COLOR = Color(1.0, 1.0, 0.0)
 
 # BALANCED BASE STATS - 2 shots to kill with starting pistol (12 damage)
-var base_speed = 150
+var base_speed = 180  # Increased from 150 for more engaging early game
 var base_health: float = 20.0
-var speed: float = 150
+var speed: float = 180  # Increased from 150 for more engaging early game
 var health: float = 20.0
 var max_health: float = 20.0
 var xp_value: int = 10
@@ -22,6 +25,7 @@ var is_colossus: bool = false  # Special flag for tanky enemy
 
 var active_dots: Dictionary = {}
 var damage_multiplier: float = 1.0  # NEW: Damage scaling over time
+var is_dying: bool = false  # Prevent multiple death drops
 
 @onready var player = get_node("/root/MainGame/Player")
 
@@ -36,7 +40,7 @@ func _ready():
 		is_colossus = true
 		# Colossus has 3x health, slower speed, more XP
 		base_health = 60.0  # 3x tankier
-		base_speed = 100   # Slower
+		base_speed = 130   # Slower than normal enemies but faster than before
 		health = base_health
 		speed = base_speed
 		xp_value = 30  # 3x XP reward
@@ -47,16 +51,21 @@ func _ready():
 func apply_level_scaling():
 	if level_scaling_applied or not is_instance_valid(player):
 		return
-	
+
+	# IMPORTANT: Bosses and mini-bosses have manually-set health, don't override it!
+	if is_in_group("boss") or is_in_group("mini_boss") or is_in_group("mega_boss"):
+		level_scaling_applied = true
+		return
+
 	var player_level = player.player_stats.get("level", 1)
-	
+
 	# PHASE 3: MUCH SLOWER enemy scaling to match XP changes
 	# Health scales: +4% per level (was +8%)
 	# Speed scales: +1% per level (was +2%)
 	# XP scales: +3% per level (was +5%)
-	
+
 	var level_mult = player_level - 1  # No scaling at level 1
-	
+
 	# Health: Moderate exponential growth
 	health = base_health * pow(1.04, level_mult)
 	max_health = health
@@ -107,55 +116,66 @@ func _process_dots(delta):
 		active_dots.erase(key)
 
 func take_damage(amount: float, is_dot: bool = false, is_crit: bool = false):
-	health -= amount 
-	
+	health -= amount
+
 	if not is_dot:
 		var color = WEAPON_COLOR
 		if is_crit:
 			color = CRIT_COLOR
 		show_damage_number(amount, color)
-	
-	if health <= 0:
+
+	if health <= 0 and not is_dying:
+		is_dying = true  # Prevent multiple drops
 		died.emit()
-		
+
 		# PHASE 3: Track kill for player stats
 		if is_instance_valid(player) and player.has_method("register_kill"):
 			player.register_kill()
 		
-		# Drop XP vial
+		# Drop XP vial (use call_deferred to avoid physics flush issues)
 		var vial = XP_VIAL_SCENE.instantiate()
 		vial.global_position = global_position
 		vial.value = xp_value
-		get_parent().add_child(vial)
+		get_parent().call_deferred("add_child", vial)
 
-		# 30% chance to drop something (shards, health pack, or powerup) - GREATLY INCREASED!
-		if randf() < 0.30:
+		# Get curse multipliers from main game
+		var curse_drop_mult = 1.0
+		var curse_shard_mult = 1.0
+		var main_game = get_parent()
+		if main_game and main_game.has_method("get_curse_multiplier"):
+			curse_drop_mult = main_game.get_curse_multiplier("drop_mult")
+			curse_shard_mult = main_game.get_curse_multiplier("shard_mult")
+
+		# Apply curse drop rate bonus (30% base, multiplied by curse)
+		var drop_chance = 0.30 * curse_drop_mult
+		if randf() < drop_chance:
 			var drop_roll = randf()
 			var drop_pos = global_position + Vector2(randf_range(-20, 20), randf_range(-20, 20))
 
-			if drop_roll < 0.90:
-				# Drop shards (90% of drops = 27% overall) - MUCH MORE COMMON!
+			if drop_roll < 0.50:
+				# Drop shards (50% of drops = 15% overall)
 				var shard_value = 1
-				if randf() < 0.15:  # 15% chance for bonus shard (increased from 10%)
-					shard_value = randi_range(2, 5)
+				if randf() < 0.02:  # 2% chance for bonus shard
+					shard_value = randi_range(2, 3)  # Max 3 instead of 5
 
-				if ResourceLoader.exists("res://NebulaShard.tscn"):
-					var shard_scene = ResourceLoader.load("res://NebulaShard.tscn", "PackedScene", ResourceLoader.CACHE_MODE_REUSE)
-					if shard_scene:
-						var shard = shard_scene.instantiate()
-						if shard:
-							if shard.has_method("set") and "value" in shard:
-								shard.value = shard_value
-							shard.global_position = drop_pos
-							get_parent().add_child(shard)
+				# Apply curse shard multiplier
+				shard_value = int(shard_value * curse_shard_mult)
 
-			elif drop_roll < 0.93:
-				# Drop health pack (3% of drops = 0.9% overall) - REDUCED to prevent clutter
-				spawn_healthpack(drop_pos)
+				# Use preloaded scene (deferred to avoid physics flush issues)
+				var shard = NEBULA_SHARD_SCENE.instantiate()
+				shard.value = shard_value
+				shard.global_position = drop_pos
+				get_parent().call_deferred("add_child", shard)
+				print("💎 Spawned Nebula Shard (value: %d) at %v" % [shard_value, drop_pos])
 
-			else:
-				# Drop powerup (7% of drops = 2.1% overall)
+			elif drop_roll < 0.65:
+				# Drop powerup (15% of drops = 4.5% overall) - More common than health
 				spawn_powerup(drop_pos)
+
+			elif drop_roll < 0.70:
+				# Drop health pack (5% of drops = 1.5% overall) - Less common than powerups
+				spawn_healthpack(drop_pos)
+			# else: 30% chance of no drop
 
 		queue_free()
 
@@ -224,45 +244,20 @@ func spawn_healthpack(pos: Vector2):
 	collision.shape = shape
 	healthpack.add_child(collision)
 
-	get_parent().add_child(healthpack)
+	# Deferred to avoid physics flush issues
+	get_parent().call_deferred("add_child", healthpack)
 
 func spawn_powerup(pos: Vector2):
 	# Randomly choose powerup type
 	var powerup_types = ["invincible", "magnet", "attack_speed", "nuke"]
 	var powerup_type = powerup_types[randi() % powerup_types.size()]
 
-	# Create powerup
-	var powerup = Area2D.new()
+	# Use proper Powerup.tscn scene with sprite support
+	var powerup = POWERUP_SCENE.instantiate()
 	powerup.global_position = pos
-	powerup.add_to_group("powerup")
-	powerup.set_meta("powerup_type", powerup_type)
-	powerup.collision_layer = 8
-	powerup.collision_mask = 4
-
-	# Visual based on type
-	var color = Color(1, 1, 0, 1)
-	match powerup_type:
-		"invincible":
-			color = Color(1, 1, 0, 1)
-		"magnet":
-			color = Color(0, 1, 1, 1)
-		"attack_speed":
-			color = Color(1, 0, 1, 1)
-		"nuke":
-			color = Color(1, 0.5, 0, 1)
-
-	var sprite = Sprite2D.new()
-	sprite.texture = create_star_texture(30, color)
-	powerup.add_child(sprite)
-
-	# Collision
-	var collision = CollisionShape2D.new()
-	var shape = CircleShape2D.new()
-	shape.radius = 30
-	collision.shape = shape
-	powerup.add_child(collision)
-
-	get_parent().add_child(powerup)
+	powerup.powerup_type = powerup_type
+	# Deferred to avoid physics flush issues
+	get_parent().call_deferred("add_child", powerup)
 
 func create_plus_texture(radius: float, color: Color) -> ImageTexture:
 	var size = int(radius * 2.5)

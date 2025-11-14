@@ -131,13 +131,25 @@ func update_weapon_levels():
 
 		# Update label text
 		var label = weapon_labels[weapon_key]
-		if weapon_level > 0:
-			label.text = "%s  Lv%d" % [get_weapon_icon(weapon_key), weapon_level]
-		else:
-			label.text = "%s  Lv0" % get_weapon_icon(weapon_key)
 
-		# Color based on level
-		if weapon_level >= 3:
+		# Check if weapon is evolved
+		var is_evolved = false
+		var evolution_type = ""
+		if player.has_method("get_weapon_evolution_status"):
+			var evo_status = player.weapon_evolutions.get(weapon_key, {})
+			is_evolved = evo_status.get("evolved", false)
+			evolution_type = evo_status.get("evolution_type", "")
+
+		if weapon_level > 0:
+			label.text = "%s  Lv%d" % [get_weapon_icon(weapon_key, is_evolved, evolution_type), weapon_level]
+		else:
+			label.text = "%s  Lv0" % get_weapon_icon(weapon_key, is_evolved, evolution_type)
+
+		# Color based on evolution status and level
+		if is_evolved:
+			# EVOLVED weapons get special gold/orange color
+			label.modulate = Color(1.0, 0.8, 0.2)  # Gold for evolved
+		elif weapon_level >= 3:
 			label.modulate = Color(1.0, 0.6, 1.0)  # Purple for max level
 		elif weapon_level >= 2:
 			label.modulate = Color(0.4, 0.8, 1.0)  # Blue for level 2
@@ -157,7 +169,57 @@ func update_weapon_levels():
 			weapon_labels[key].queue_free()
 		weapon_labels.erase(key)
 
-func get_weapon_icon(weapon_key: String) -> String:
+func get_weapon_icon(weapon_key: String, is_evolved: bool = false, evolution_type: String = "") -> String:
+	# Return evolved icons if weapon has evolved
+	if is_evolved and evolution_type != "":
+		match weapon_key:
+			"pistol":
+				if evolution_type == "dual":
+					return "🔫🔫"  # Dual Pistols
+				elif evolution_type == "magnum":
+					return "🔫💢"  # Magnum Revolver
+			"shotgun":
+				if evolution_type == "gatling":
+					return "💥💨"  # Gatling Shotgun
+				elif evolution_type == "explosive":
+					return "💥💣"  # Explosive Shells
+			"grenade":
+				if evolution_type == "cluster":
+					return "💣💣"  # Cluster Bomb
+				elif evolution_type == "sticky":
+					return "💣📍"  # Sticky Mines
+			"aura":
+				if evolution_type == "toxic":
+					return "☣️"  # Toxic Field (biohazard)
+				elif evolution_type == "nuclear":
+					return "☢️💥"  # Nuclear Pulse
+			"sword":
+				if evolution_type == "bladestorm":
+					return "⚔️🌪️"  # Blade Storm
+				elif evolution_type == "berserker":
+					return "⚔️🔥"  # Berserker Blade
+			"lightning_spell":
+				if evolution_type == "chainstorm":
+					return "⚡⚡"  # Chain Storm
+				elif evolution_type == "thunderstrike":
+					return "⚡💥"  # Thunder Strike
+			"laser_beam":
+				if evolution_type == "orbital":
+					return "🔦🔄"  # Orbital Lasers
+				elif evolution_type == "deathray":
+					return "🔦💀"  # Death Ray
+			"summon_spaceships":
+				if evolution_type == "carrier":
+					return "🛸🛸"  # Carrier Fleet
+				elif evolution_type == "kamikaze":
+					return "🛸💥"  # Kamikaze Squadron
+			"acid_pool":
+				if evolution_type == "nova":
+					return "🧪💥"  # Corrosive Nova
+				elif evolution_type == "lingering":
+					return "🧪☠️"  # Lingering Death
+
+	# Return base weapon icons
 	match weapon_key:
 		"pistol":
 			return "🔫"
@@ -169,5 +231,13 @@ func get_weapon_icon(weapon_key: String) -> String:
 			return "☢️"
 		"sword":
 			return "⚔️"
+		"lightning_spell":
+			return "⚡"
+		"laser_beam":
+			return "🔦"
+		"summon_spaceships":
+			return "🛸"
+		"acid_pool":
+			return "🧪"
 		_:
 			return "🔸"

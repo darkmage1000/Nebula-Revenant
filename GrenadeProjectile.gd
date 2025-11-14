@@ -14,9 +14,17 @@ var poison_damage: float = 0.0
 var burn_enabled: bool = false
 var burn_damage: float = 0.0
 
+# Evolution flags
+var cluster_bomb: bool = false
+var sticky_mine: bool = false
+
 var player: CharacterBody2D = null
 var traveled_distance: float = 0.0
 var velocity: Vector2 = Vector2.ZERO
+
+# Sticky mine tracking
+var is_stuck: bool = false
+var detection_radius: float = 120.0
 
 # Explosion visual
 const EXPLOSION_SCENE = preload("res://Explosion.tscn")  # We'll create this
@@ -33,38 +41,68 @@ func _ready():
 func _physics_process(delta: float):
 	if has_exploded:
 		return
-		
+
+	# Sticky mines: stop and wait for enemies after reaching max distance
+	if sticky_mine and is_stuck:
+		check_for_nearby_enemies()
+		return
+
 	# Move grenade
 	var movement = velocity * delta
 	position += movement
 	traveled_distance += movement.length()
-	
+
 	# Explode when distance reached
 	if traveled_distance >= distance:
-		explode()
+		if sticky_mine:
+			# Stick to ground and wait
+			is_stuck = true
+			velocity = Vector2.ZERO
+			if has_node("Sprite2D"):
+				$Sprite2D.modulate = Color(1.0, 0.2, 0.2)  # Red to show armed
+		else:
+			explode()
 
 func _on_body_entered(body: Node2D):
-	# Explode on contact with enemy
-	if body.is_in_group("mob") and not has_exploded:
+	# Explode on contact with enemy (unless it's a sticky mine that needs to arm first)
+	if body.is_in_group("mob") and not has_exploded and not (sticky_mine and not is_stuck):
 		explode()
+
+func check_for_nearby_enemies():
+	# Sticky mine: explode when enemy gets close
+	var enemies = get_tree().get_nodes_in_group("mob")
+	for enemy in enemies:
+		if is_instance_valid(enemy) and enemy is Node2D:
+			var dist = global_position.distance_to(enemy.global_position)
+			if dist <= detection_radius:
+				explode()
+				return
 
 func explode():
 	if has_exploded:
 		return
 	has_exploded = true
-	
+
+	# CLUSTER BOMB: Spawn 3 mini-grenades before exploding
+	if cluster_bomb:
+		spawn_cluster_grenades()
+
 	# Create explosion visual
 	spawn_explosion_effect()
-	
+
 	# Find all enemies in AOE
 	var final_aoe = aoe * aoe_mult
 	var enemies_in_range = get_tree().get_nodes_in_group("mob")
-	
+
 	for enemy in enemies_in_range:
 		if is_instance_valid(enemy) and enemy is Node2D:
 			var dist = global_position.distance_to(enemy.global_position)
-			
-			if dist <= final_aoe:
+
+			# Account for enemy scale - larger enemies (like bosses) get larger hit radius
+			var avg_scale = (enemy.scale.x + enemy.scale.y) / 2.0
+			var enemy_scale_bonus = avg_scale * 30.0  # Add 30 pixels per scale unit
+
+			if dist <= (final_aoe + enemy_scale_bonus):
 				# Apply damage
 				if enemy.has_method("take_damage"):
 					enemy.take_damage(damage)
@@ -81,13 +119,21 @@ func explode():
 				if burn_enabled and burn_damage > 0 and enemy.has_method("start_dot"):
 					enemy.start_dot("grenade_burn", burn_damage * 0.3, 3, Color(1.0, 0.4, 0.0))
 	
-	# Also damage asteroids in range!
+	# Also damage obstacles (asteroids and flowers) in range!
 	var asteroids_in_range = get_tree().get_nodes_in_group("asteroid")
-	for asteroid in asteroids_in_range:
-		if is_instance_valid(asteroid) and asteroid is Node2D:
-			var dist = global_position.distance_to(asteroid.global_position)
-			if dist <= final_aoe and asteroid.has_method("take_damage"):
-				asteroid.take_damage(damage)
+	var flowers_in_range = get_tree().get_nodes_in_group("flower")
+	var obstacles = asteroids_in_range + flowers_in_range
+
+	for obstacle in obstacles:
+		if is_instance_valid(obstacle) and obstacle is Node2D:
+			var dist = global_position.distance_to(obstacle.global_position)
+
+			# Account for obstacle scale
+			var avg_scale = (obstacle.scale.x + obstacle.scale.y) / 2.0
+			var obstacle_scale_bonus = avg_scale * 30.0
+
+			if dist <= (final_aoe + obstacle_scale_bonus) and obstacle.has_method("take_damage"):
+				obstacle.take_damage(damage)
 	
 	# Remove grenade
 	queue_free()
@@ -131,3 +177,37 @@ func create_simple_explosion():
 		if is_instance_valid(explosion):
 			explosion.queue_free()
 	)
+
+func spawn_cluster_grenades():
+	# Spawn 3 mini-grenades in 120° spread
+	const GRENADE_PROJECTILE_SCENE = preload("res://GrenadeProjectile.tscn")
+	var angles = [-120, 0, 120]  # 120° apart
+
+	for angle_offset in angles:
+		var mini_grenade = GRENADE_PROJECTILE_SCENE.instantiate()
+		mini_grenade.global_position = global_position
+
+		# Mini-grenades have 40% damage and smaller AOE
+		mini_grenade.damage = damage * 0.4
+		mini_grenade.aoe = aoe * 0.6  # Smaller explosion radius
+		mini_grenade.distance = 150  # Shorter travel distance
+		mini_grenade.speed = 300
+		mini_grenade.aoe_mult = aoe_mult
+		mini_grenade.player = player
+
+		# Inherit status effects
+		mini_grenade.poison_enabled = poison_enabled
+		mini_grenade.poison_damage = poison_damage
+		mini_grenade.burn_enabled = burn_enabled
+		mini_grenade.burn_damage = burn_damage
+
+		# Set direction (spread out)
+		var angle_rad = deg_to_rad(angle_offset)
+		mini_grenade.rotation = angle_rad
+
+		# Visual distinction
+		if mini_grenade.has_node("Sprite2D"):
+			mini_grenade.scale = Vector2(0.6, 0.6)  # Smaller
+			mini_grenade.get_node("Sprite2D").modulate = Color(1.0, 0.7, 0.2)
+
+		get_parent().add_child(mini_grenade)

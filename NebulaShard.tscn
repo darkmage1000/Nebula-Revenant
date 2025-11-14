@@ -1,6 +1,7 @@
-[gd_scene load_steps=3 format=3 uid="uid://nebulashard123"]
+[gd_scene load_steps=4 format=3 uid="uid://c3qjp5xwvn0ob"]
 
-[ext_resource type="Script" path="res://nebula_shard.gd" id="1_shard"]
+[ext_resource type="Script" path="res://nebula_shard.gd" id="1_shard" uid="uid://cyi1xymd3o8a5"]
+[ext_resource type="Texture2D" uid="uid://nig2jvoqeu43" path="res://nebulashard.png" id="2_nebulashard"]
 
 [sub_resource type="CircleShape2D" id="shard_collision"]
 radius = 20.0
@@ -13,14 +14,14 @@ script = ExtResource("1_shard")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 modulate = Color(0.3, 0.8, 1, 1)
-scale = Vector2(2, 2)
-texture = preload("res://gem.png")
+scale = Vector2(0.6, 0.6)
+texture = ExtResource("2_nebulashard")
 
 [node name="Glow" type="Sprite2D" parent="."]
 modulate = Color(0.3, 0.8, 1, 0.5)
 z_index = -1
-scale = Vector2(3, 3)
-texture = preload("res://gem.png")
+scale = Vector2(0.8, 0.8)
+texture = ExtResource("2_nebulashard")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("shard_collision")

@@ -35,19 +35,20 @@ func shoot():
 	if not is_instance_valid(player) or not is_instance_valid(shooting_point):
 		return
 
-	var total_projectiles = stats.projectiles + player.player_stats.projectiles 
+	var total_projectiles = stats.projectiles + player.player_stats.projectiles
 	var final_damage = stats.damage * player.player_stats.damage_mult
 	var final_aoe = stats.aoe * player.player_stats.aoe_mult
-	
+	var final_distance = stats.get("distance", 300) * player.player_stats.get("attack_range_mult", 1.0)
+
 	var base_direction = get_direction_to_closest_enemy()
-	
+
 	for i in range(total_projectiles):
 		var new_grenade = GRENADE_PROJECTILE_SCENE.instantiate()
-		
+
 		new_grenade.global_position = shooting_point.global_position
 		new_grenade.damage = final_damage
 		new_grenade.aoe = final_aoe
-		new_grenade.distance = stats.get("distance", 300)
+		new_grenade.distance = final_distance
 		new_grenade.aoe_mult = player.player_stats.aoe_mult
 		
 		new_grenade.poison_enabled = stats.get("poison", false)
@@ -61,25 +62,34 @@ func shoot():
 		new_grenade.pierce = stats.get("pierce", 0)
 		new_grenade.knockback_amount = stats.get("knockback", 0.0)
 		new_grenade.player = player
-		
-		new_grenade.rotation = base_direction.angle() 
+
+		# Evolution flags
+		new_grenade.cluster_bomb = stats.get("cluster_bomb", false)
+		new_grenade.sticky_mine = stats.get("sticky_mines", false)
+
+		new_grenade.rotation = base_direction.angle()
 		player.get_parent().add_child(new_grenade)
 		
 		player.report_weapon_damage("grenade", final_damage)
 
 func get_direction_to_closest_enemy() -> Vector2:
-	var closest_mob: Node2D = null
+	var closest_target: Node2D = null
 	var min_distance: float = 999999.0
+
+	# Get all targetable entities (mobs, asteroids, and flowers)
 	var mobs: Array[Node] = get_tree().get_nodes_in_group("mob")
-	
-	for mob in mobs:
-		if is_instance_valid(mob) and mob is Node2D: 
-			var distance = global_position.distance_to(mob.global_position)
+	var asteroids: Array[Node] = get_tree().get_nodes_in_group("asteroid")
+	var flowers: Array[Node] = get_tree().get_nodes_in_group("flower")
+	var all_targets = mobs + asteroids + flowers
+
+	for target in all_targets:
+		if is_instance_valid(target) and target is Node2D:
+			var distance = global_position.distance_to(target.global_position)
 			if distance < min_distance:
 				min_distance = distance
-				closest_mob = mob as Node2D
-			
-	if is_instance_valid(closest_mob):
-		return global_position.direction_to(closest_mob.global_position)
+				closest_target = target as Node2D
+
+	if is_instance_valid(closest_target):
+		return global_position.direction_to(closest_target.global_position)
 	else:
 		return Vector2.RIGHT

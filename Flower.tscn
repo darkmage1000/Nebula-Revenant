@@ -1,0 +1,13 @@
+[gd_scene load_steps=3 format=3 uid="uid://b5qjp3xwvn2kc"]
+
+[ext_resource type="Script" path="res://Flower.gd" id="1_flower"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_flower"]
+radius = 30.0
+
+[node name="Flower" type="Area2D" groups=["flower"]]
+collision_layer = 8
+script = ExtResource("1_flower")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_flower")

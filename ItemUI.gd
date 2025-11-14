@@ -12,13 +12,13 @@ var tier: String = "yellow"
 @onready var take_button = $Panel/TakeButton
 
 func _ready():
+	# Set process mode to always so it works while paused
+	process_mode = Node.PROCESS_MODE_ALWAYS
+
 	take_button.pressed.connect(_on_take_pressed)
-	
+
 	# Set up UI based on tier
 	update_ui()
-	
-	# Don't pause game, just show UI
-	# Game continues in background
 
 func update_ui():
 	# Tier colors
